@@ -12,7 +12,7 @@ var client = new Client();
 global.mongoLabURI = global.config.mongoDbConn.mongoLabURI;
 
 //mongoose.connect(config[config.mongoDbConn[0]].URI);
-
+//sss
 //step 1
 var stockListURL = 'https://api.investtab.com/api/search?limit=3000&query=hk&chart_only=false&type=stock';
 var stockMinQuoteURL = 'http://hkej.m-finance.com/charting/tomcat/mfchart?code=%s&period=1min&frame=72+HOUR';
