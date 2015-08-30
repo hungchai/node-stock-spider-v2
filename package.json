@@ -6,10 +6,12 @@
   "author": "Tom ma",
   "dependencies": {
     "async": "^0.2.10",
+    "casperjs": "^1.1.0-beta3",
     "co": "^4.6.0",
     "co-parallel": "^1.0.0",
     "mongodb": "^2.0.39",
     "mongoose": "^4.1.1",
+    "phantomjs": "^1.9.18",
     "request": "^2.60.0",
     "underscore": "^1.8.3"
   },
