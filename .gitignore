@@ -1,6 +1,5 @@
 mongo_data
 node_modules
-phantomjs
 *.md
 
 config.json

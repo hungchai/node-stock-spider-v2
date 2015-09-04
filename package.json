@@ -11,8 +11,10 @@
     "co-parallel": "^1.0.0",
     "mongodb": "^2.0.39",
     "mongoose": "^4.1.1",
+    "phantom": "^0.7.2",
     "phantomjs": "^1.9.18",
     "request": "^2.60.0",
+    "spooky": "^0.2.5",
     "underscore": "^1.8.3"
   },
   "devDependencies": {},
