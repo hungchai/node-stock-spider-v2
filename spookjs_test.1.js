@@ -43,7 +43,7 @@ var spooky = new Spooky({
     });
     //set value to spooky must be using thenEvaluate to control webpage js
     spooky.thenEvaluate(function(config) {
-        console.log('x:', config.BankAcct.login); // -> x: spooky
+        
         document.querySelector('input#j_username').setAttribute('value', config.BankAcct.login);
         document.querySelector('input#j_passwordUI').setAttribute('value', config.BankAcct.password);
     }, {
