@@ -1,3 +1,5 @@
+global.config = require('../sensitive_data/config.json');
+
 try {
     var Spooky = require('spooky');
 }
@@ -31,22 +33,29 @@ var spooky = new Spooky({
     }
 
 
+
     var url = 'https://wealth.standardchartered.com.hk/ows-oe/foa/login.htm?lang=en_HK';
 
     spooky.start(url, function() {
         // search for 'casperjs' from google form
-        this.emit("hello","page loaded");
-        // this.test.assertExists('form#login_form', 'form is found');
-        this.fill('form#command', {
-            'j_username': ' ',
-            'j_passwordUI': ' '
-        }, false);
-        // this.click('form#login_form input[type="submit"]');
+        this.emit("hello", "page loaded");
+
+    });
+    //set value to spooky must be using thenEvaluate to control webpage js
+    spooky.thenEvaluate(function(config) {
+        console.log('x:', config.BankAcct.login); // -> x: spooky
+        document.querySelector('input#j_username').setAttribute('value', config.BankAcct.login);
+        document.querySelector('input#j_passwordUI').setAttribute('value', config.BankAcct.password);
+    }, {
+        config: global.config
+    });
+
+    spooky.then(function() {
         this.capture('sc1.png', undefined, {
             format: 'jpg',
             quality: 75
         });
-    });
+    })
     spooky.thenClick('form#command input[type="submit"]', function() {
         this.waitForSelector('#login-information', function() {
             this.emit('hello', "I've waited for a second.");
@@ -63,7 +72,7 @@ var spooky = new Spooky({
             this.emit('hello', this.getHTML('.txt_title'));
         });
     });
-       spooky.then(function() {
+    spooky.then(function() {
         this.capture('sc3.png', undefined, {
             format: 'jpg',
             quality: 75
@@ -94,6 +103,18 @@ spooky.on('console', function (line) {
 
 spooky.on('hello', function(greeting) {
     console.log(greeting);
+});
+
+spooky.on('getBankAcct', function(key) {
+    if (key === "name") {
+        return global.config.BankAcct.login;
+    }
+    else if (key === "pw") {
+        return global.config.BankAcct.password;
+    }
+    else {
+        return ""
+    };
 });
 
 spooky.on('log', function(log) {
