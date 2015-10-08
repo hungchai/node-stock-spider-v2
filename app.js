@@ -1,15 +1,13 @@
-global.config = require('../sensitive_data/config.json');
+global.config = require('./config/config.json');
 var mongoose = require('mongoose');
 var MongoClient = require('mongodb').MongoClient;
-var Client = require('node-rest-client').Client;
 var co = require('co');
 var parallel = require('co-parallel');
 var util = require('util');
 var buf = require("buffer");
 var request = require('request');
 
-var client = new Client();
-global.mongoLabURI = global.config.mongoDbConn.mongoLabURI;
+global.mongoURI = global.config.mongoDbConn;
 
 //mongoose.connect(config[config.mongoDbConn[0]].URI);
 //sss
@@ -31,7 +29,15 @@ function getStockList() {
 function getStockInfo(stockSymbol) {
     return function(callback) {
         request(util.format(stockInfoURL, stockSymbol), function(error, response, body) {
-            callback(error, JSON.parse(body));
+            console.log("getStockInfo:"+util.format(stockInfoURL, stockSymbol));
+            if (error || response.statusCode != 200) {
+                console.log("receive:"+util.format(stockInfoURL, stockSymbol));
+                callback(error, NaN);
+            }else
+            {
+                console.log("receive:"+util.format(stockInfoURL, stockSymbol));
+                callback(error, JSON.parse(body));
+            }
         });
 
     };
@@ -51,7 +57,7 @@ function stockMinQuoteList(stockNum) {
 function saveStockListMongo(stocks) {
     return function(callback) {
         var data = stocks;
-        MongoClient.connect(global.mongoLabURI, function(err, db) {
+        MongoClient.connect(global.mongoURI, function(err, db) {
             if (!err) {
                 var lastupdate = new Date();
                 var stockProfile2Collection = db.collection('stockProfile');
@@ -84,7 +90,7 @@ function saveStockListMongo(stocks) {
 function saveStockInfoMongo(stockInfos) {
     return function(callback) {
         var data = stockInfos;
-        MongoClient.connect(global.mongoLabURI, function(err, db) {
+        MongoClient.connect(global.mongoURI, function(err, db) {
             if (!err) {
                 var lastupdate = new Date();
                 var stockProfile2Collection = db.collection('stockProfile');
@@ -123,7 +129,7 @@ co(function*() {
     var getStockInfoMap = stocks.map(function(stock) {
         return getStockInfo(stock.symbol);
     })
-    var stockInfos = yield parallel(getStockInfoMap, 2);
+    var stockInfos = yield parallel(getStockInfoMap, 10);
     var saveStockInfos = yield saveStockInfoMongo(stockInfos)
     //
 
