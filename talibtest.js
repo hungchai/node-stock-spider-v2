@@ -8,20 +8,18 @@ var request = require('request');
 
 var stockMarketData = "https://api.investtab.com/api/quote/%s%3AHK/historical-prices?resolution=D&from=1412121600&to=1444146071"
 
-request(util.format(stockMarketData, '00183'), function(error, response, body) {
+request(util.format(stockMarketData, '00700'), function(error, response, body) {
     var marketData = JSON.parse(body);
     talib.execute({
-        name: "ADX",
+        name: "SMA",
         startIdx: 0,
-        endIdx: marketData.c.length - 1,
-        high: marketData.h,
-        low: marketData.l,
-        close: marketData.c,
-        optInTimePeriod: 9
+        endIdx: marketData.c.length-1,
+        inReal:marketData.c,
+        optInTimePeriod: 10
     }, function (result) {
-
-        console.log("ADX Function Results:");
-        console.log(result);
+        var outreal = result.result.outReal;
+        console.log("EMA Function Results:");
+        console.dir(result);
 
     });
 });
