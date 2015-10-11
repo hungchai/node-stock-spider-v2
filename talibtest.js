@@ -6,6 +6,7 @@ var util = require('util');
 console.log("TALib Version: " + talib.version);
 var request = require('request');
 
+
 var stockMarketData = "https://api.investtab.com/api/quote/%s%3AHK/historical-prices?resolution=D&from=1412121600&to=1444146071"
 
 request(util.format(stockMarketData, '00700'), function(error, response, body) {
@@ -18,8 +19,8 @@ request(util.format(stockMarketData, '00700'), function(error, response, body) {
         optInTimePeriod: 10
     }, function (result) {
         var outreal = result.result.outReal;
-        console.log("EMA Function Results:");
-        console.dir(result);
+        console.log("SMA(10) Function Results:");
+        console.dir(outreal.pop());
 
     });
 });
