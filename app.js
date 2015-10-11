@@ -41,7 +41,7 @@ function getStockInfo(stockSymbol) {
         });
 
     };
-};
+}
 //e.g: stockNum = 700
 function stockMinQuoteList(stockNum) {
     return function (callback) {
@@ -52,7 +52,7 @@ function stockMinQuoteList(stockNum) {
         })
 
     };
-};
+}
 
 function saveStockListMongo(stocks, db) {
     return function (callback) {
@@ -78,13 +78,12 @@ function saveStockListMongo(stocks, db) {
         });
     }
 }
-;
 
 function saveStockInfoMongo(stockInfos, db) {
     return function (callback) {
         var data = stockInfos;
         //MongoClient.connect(global.mongoURI, function(err, db) {
-        var lastupdate = new Date();
+        //var lastupdate = new Date();
         var stockProfile2Collection = db.collection('stockProfile');
         var bulk = stockProfile2Collection.initializeUnorderedBulkOp({
             useLegacyOps: true
@@ -92,25 +91,33 @@ function saveStockInfoMongo(stockInfos, db) {
         for (var i = 0, len = data.length; i < len; i++) {
             var info = {};
             var apiData = data[i];
+            console.log('symbol:'+apiData.symbol);
 
             //sector transform
-            var sector_id = Object.keys(apiData.sector)[0];
-            info.sector = {};
-            for (var sectorkey in apiData.sector[sector_id]) {
-                info.sector[sectorkey] = apiData.sector[sector_id][sectorkey];
+            if ((apiData.sector))
+            {
+                var sector_id = Object.keys(apiData.sector)[0];
+                info.sector = {};
+                for (var sectorkey in apiData.sector[sector_id]) {
+                    info.sector[sectorkey] = apiData.sector[sector_id][sectorkey];
+                }
             }
 
             //sub industry transform
-            var sub_industry_id = Object.keys(apiData.sub_industry)[0];
-            info.sub_industry = {};
-            for (var sub_industry_key in apiData.sub_industry[sub_industry_id]) {
-                info.sub_industry[sub_industry_key] = apiData.sub_industry[sub_industry_id][sub_industry_key];
+            if ((apiData.sub_industry)) {
+                var sub_industry_id = Object.keys(apiData.sub_industry)[0];
+                info.sub_industry = {};
+                for (var sub_industry_key in apiData.sub_industry[sub_industry_id]) {
+                    info.sub_industry[sub_industry_key] = apiData.sub_industry[sub_industry_id][sub_industry_key];
+                }
             }
             // industry transform
-            var industry_id = Object.keys(apiData.industry)[0];
-            info.industry = {};
-            for (var industry_key in apiData.industry[industry_id]) {
-                info.industry[industry_key] = apiData.industry[industry_id][industry_key];
+            if ((apiData.industry)) {
+                var industry_id = Object.keys(apiData.industry)[0];
+                info.industry = {};
+                for (var industry_key in apiData.industry[industry_id]) {
+                    info.industry[industry_key] = apiData.industry[industry_id][industry_key];
+                }
             }
 
             info.trading_currency = apiData.trading_currency;
@@ -146,12 +153,11 @@ function saveStockInfoMongo(stockInfos, db) {
     //})
 }
 
-;
 MongoClient.connect(global.mongoURI, function (err, db) {
     co(function*() {
         var stocks = (yield getStockList());
         var saveStocks = yield saveStockListMongo(stocks, db);
-        // stocks = stocks.slice(0,6);
+        //stocks = stocks.slice(0,6);
         var getStockInfoMap = stocks.map(function (stock) {
             return getStockInfo(stock.symbol);
         })
@@ -169,4 +175,4 @@ MongoClient.connect(global.mongoURI, function (err, db) {
     }).catch(function (err, result) {
         console.log('err: ' + err + ', result: ' + result);
     })
-});
+})
