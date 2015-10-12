@@ -161,7 +161,7 @@ MongoClient.connect(global.mongoURI, function (err, db) {
         var getStockInfoMap = stocks.map(function (stock) {
             return getStockInfo(stock.symbol);
         })
-        var stockInfos = yield parallel(getStockInfoMap, 7);
+        var stockInfos = yield parallel(getStockInfoMap, 20);
         var saveStockInfos = yield saveStockInfoMongo(stockInfos, db)
         //
 

@@ -15,7 +15,7 @@
     "phantomjs": "^1.9.18",
     "request": "^2.60.0",
     "spooky": "^0.2.5",
-    "talib": "^1.0.0",
+    "talib": "^1.0.2",
     "underscore": "^1.8.3"
   },
   "devDependencies": {},
