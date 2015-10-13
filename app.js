@@ -14,7 +14,8 @@ global.mongoURI = global.config.mongoDbConn;
 //step 1
 var stockListURL = 'https://api.investtab.com/api/search?limit=5000&query=hk&chart_only=false&type=stock';
 var stockMinutesQuoteURL = 'http://hkej.m-finance.com/charting/tomcat/mfchart?code=%s&period=1min&frame=72+HOUR';
-var stockDayQuoteURL = 'https://api.investtab.com/api/quote/%s%3AHK/historical-prices?resolution=D';
+var stockHistDayQuoteURL = 'http://hkej.m-finance.com/charting/tomcat/mfchart';
+var stockTodayQuoteURL = 'http://hkej.m-finance.com/charting/tomcat/todaydata';
 var stockInfoURL = 'https://api.investtab.com/api/quote/%s/info';
 // registering remote methods
 
@@ -54,6 +55,28 @@ function stockMinQuoteList(stockNum) {
     };
 }
 
+function stockHistDayQuoteList(stockNum) {
+    return function (callback) {
+        var formBody = util.format('code=%s&period=day&frame=2+YEAR', parseInt(stockNum));
+        var contentLength = formBody.length;
+        request({
+            headers: {
+                'Content-Length': contentLength,
+                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                'Referer': util.format('http://stock360.hkej.com/quotePlus/%s', stockNum)
+            },
+            uri: stockHistDayQuoteURL,
+            body: formBody,
+            method: 'POST'
+        }, function (error, response, body) {
+            if (!error && response.statusCode == 200) {
+                callback(error, JSON.parse(body));
+            }
+        })
+
+    }
+}
+
 function saveStockListMongo(stocks, db) {
     return function (callback) {
         var data = stocks;
@@ -71,6 +94,7 @@ function saveStockListMongo(stocks, db) {
             }).upsert().replaceOne(
                 data[i]
             );
+
         }
         bulk.execute(function (err, result) {
             console.log(result.nInserted);
@@ -155,6 +179,9 @@ function saveStockInfoMongo(stockInfos, db) {
 
 MongoClient.connect(global.mongoURI, function (err, db) {
     co(function*() {
+
+        var test = yield stockHistDayQuoteList('700');
+
         var stocks = (yield getStockList());
         var saveStocks = yield saveStockListMongo(stocks, db);
         //stocks = stocks.slice(0,6);
