@@ -55,28 +55,67 @@ function stockMinQuoteList(stockNum) {
     };
 }
 
-function stockHistDayQuoteList(stockNum) {
+function stockQuoteList(stockNum, parameter, callback) {
     return function (callback) {
-        var formBody = util.format('code=%s&period=day&frame=2+YEAR', parseInt(stockNum));
+        var formBody = util.format('code=%s&%s', parseInt(stockNum), parameter);
         var contentLength = formBody.length;
         request({
             headers: {
                 'Content-Length': contentLength,
                 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-                'Referer': util.format('http://stock360.hkej.com/quotePlus/%s', stockNum)
+                'Referer': util.format('http://stock360.hkej.com/quotePlus/%s', parseInt(stockNum))
             },
             uri: stockHistDayQuoteURL,
             body: formBody,
             method: 'POST'
         }, function (error, response, body) {
             if (!error && response.statusCode == 200) {
-                callback(error, JSON.parse(body));
+                var d = JSON.parse(body);
+                d.symbol = stockNum
+                callback(error, d);
             }
         })
 
     }
 }
+function stockHistDayQuoteList(stockNum) {
+    return function (callback) {
+        stockQuoteList(stockNum, 'period=day&frame=2+YEAR')(callback);
+    }
+}
 
+function saveStockDayListMongo(stockDayQuoteList, db) {
+    return function (callback) {
+        var data = stockDayQuoteList;
+//        MongoClient.connect(global.mongoURI, function(err, db) {
+        var lastupdate = new Date();
+        var stockProfile2Collection = db.collection('stockDayQuote');
+        var bulk = stockProfile2Collection.initializeUnorderedBulkOp({
+            useLegacyOps: true
+        });
+        for (var i = 0, len = data.length; i < len; i++) {
+
+            var stocksymbol = data[i].symbol;
+            var stockDataset = data[i].dataset;
+            for (var j = 0; j < stockDataset.length; j++) {
+                var stockdaydata = stockDataset[j];
+                stockdaydata.symbol = stocksymbol;
+                //batch.insert(data[i]);
+                bulk.find({
+                    $and: [{symbol: stocksymbol}, {Date: stockdaydata.Date}]
+
+                }).upsert().replaceOne(
+                    stockdaydata
+                );
+
+            }
+            bulk.execute(function (err, result) {
+                console.log(result.nInserted);
+                callback(err, result);
+            });
+        }
+    }
+}
 function saveStockListMongo(stocks, db) {
     return function (callback) {
         var data = stocks;
@@ -180,7 +219,10 @@ function saveStockInfoMongo(stockInfos, db) {
 MongoClient.connect(global.mongoURI, function (err, db) {
     co(function*() {
 
-        var test = yield stockHistDayQuoteList('700');
+        var test = yield stockHistDayQuoteList('00700:HK');
+        var a = [];
+        a[0] = test;
+        var test2 = yield saveStockDayListMongo(a, db);
 
         var stocks = (yield getStockList());
         var saveStocks = yield saveStockListMongo(stocks, db);
