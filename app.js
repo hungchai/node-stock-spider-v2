@@ -55,8 +55,9 @@ function stockMinQuoteList(stockNum) {
     };
 }
 
-function stockQuoteList(stockNum, parameter, callback) {
+function getStockQuoteList(stockNum, parameter, callback) {
     return function (callback) {
+        console.log("getStockQuoteList: " + stockNum);
         var formBody = util.format('code=%s&%s', parseInt(stockNum), parameter);
         var contentLength = formBody.length;
         request({
@@ -70,6 +71,7 @@ function stockQuoteList(stockNum, parameter, callback) {
             method: 'POST'
         }, function (error, response, body) {
             if (!error && response.statusCode == 200) {
+                console.log("receive: " + stockNum);
                 var d = JSON.parse(body);
                 d.symbol = stockNum
                 callback(error, d);
@@ -78,13 +80,13 @@ function stockQuoteList(stockNum, parameter, callback) {
 
     }
 }
-function stockHistDayQuoteList(stockNum) {
+function getstockHistDayQuoteList(stockNum) {
     return function (callback) {
-        stockQuoteList(stockNum, 'period=day&frame=2+YEAR')(callback);
+        getStockQuoteList(stockNum, 'period=day&frame=2+YEAR')(callback);
     }
 }
 
-function saveStockDayListMongo(stockDayQuoteList, db) {
+function saveStockDayHistQuoteMongo(stockDayQuoteList, db) {
     return function (callback) {
         var data = stockDayQuoteList;
 //        MongoClient.connect(global.mongoURI, function(err, db) {
@@ -93,10 +95,13 @@ function saveStockDayListMongo(stockDayQuoteList, db) {
         var bulk = stockProfile2Collection.initializeUnorderedBulkOp({
             useLegacyOps: true
         });
+
         for (var i = 0, len = data.length; i < len; i++) {
 
             var stocksymbol = data[i].symbol;
             var stockDataset = data[i].dataset;
+            console.log('symbol:' + data[i].symbol);
+            //if (stockDataset != null) {
             for (var j = 0; j < stockDataset.length; j++) {
                 var stockdaydata = stockDataset[j];
                 stockdaydata.symbol = stocksymbol;
@@ -113,6 +118,7 @@ function saveStockDayListMongo(stockDayQuoteList, db) {
                 console.log(result.nInserted);
                 callback(err, result);
             });
+            //}
         }
     }
 }
@@ -219,24 +225,24 @@ function saveStockInfoMongo(stockInfos, db) {
 MongoClient.connect(global.mongoURI, function (err, db) {
     co(function*() {
 
-        var test = yield stockHistDayQuoteList('00700:HK');
-        var a = [];
-        a[0] = test;
-        var test2 = yield saveStockDayListMongo(a, db);
 
         var stocks = (yield getStockList());
-        var saveStocks = yield saveStockListMongo(stocks, db);
+        //var saveStocks = yield saveStockListMongo(stocks, db);
         //stocks = stocks.slice(0,6);
-        var getStockInfoMap = stocks.map(function (stock) {
-            return getStockInfo(stock.symbol);
-        })
-        var stockInfos = yield parallel(getStockInfoMap, 20);
-        var saveStockInfos = yield saveStockInfoMongo(stockInfos, db)
-        //
+        //var getStockInfoMap = stocks.map(function (stock) {
+        //    return getStockInfo(stock.symbol);
+        //});
+        //var stockInfos = yield parallel(getStockInfoMap, 20);
+        //var saveStockInfos = yield saveStockInfoMongo(stockInfos, db)
+        ////
 
-        var p2 = stocks.map(function (stockObj) {
-            return stockMinQuoteList(parseInt(stockObj.symbol));
-        });
+        var getStockDayHistQuoteMap = stocks.map(function (stock) {
+            return getstockHistDayQuoteList(stock.symbol)
+            
+        })
+        var stockDayHistQuote = yield parallel(getStockDayHistQuoteMap, 20);
+        var saveStockDayQuotes = yield saveStockDayHistQuoteMongo(stockDayHistQuote, db);
+
         //var res = yield parallel(p2, 4);
         //console.log(JSON.stringify(res))
 
