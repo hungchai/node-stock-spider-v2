@@ -92,33 +92,33 @@ function saveStockDayHistQuoteMongo(stockDayQuoteList, db) {
 //        MongoClient.connect(global.mongoURI, function(err, db) {
         var lastupdate = new Date();
         var stockDayQuoteCollection = db.collection('stockDayQuote');
-        var bulk = stockDayQuote.initializeUnorderedBulkOp({
-            useLegacyOps: true
-        });
 
         for (var i = 0, len = data.length; i < len; i++) {
 
             var stocksymbol = data[i].symbol;
             var stockDataset = data[i].dataset;
             console.log('symbol:' + data[i].symbol);
-            //if (stockDataset != null) {
-            for (var j = 0; j < stockDataset.length; j++) {
-                var stockdaydata = stockDataset[j];
-                stockdaydata.symbol = stocksymbol;
-                //batch.insert(data[i]);
-                bulk.find({
-                    $and: [{symbol: stocksymbol}, {Date: stockdaydata.Date}]
-
-                }).upsert().replaceOne(
-                    stockdaydata
-                );
-
+            if (stockDataset != null) {
+                var bulk = stockDayQuote.initializeUnorderedBulkOp({
+                    useLegacyOps: true
+                });
+                for (var j = 0; j < stockDataset.length; j++) {
+                    var stockdaydata = stockDataset[j];
+                    stockdaydata.symbol = stocksymbol;
+                    //batch.insert(data[i]);
+                    bulk.find({
+                        $and: [{symbol: stocksymbol}, {Date: stockdaydata.Date}]
+    
+                    }).upsert().replaceOne(
+                        stockdaydata
+                    );
+    
+                }
+                bulk.execute(function (err, result) {
+                    console.log(result.nInserted);
+                    callback(err, result);
+                });
             }
-            bulk.execute(function (err, result) {
-                console.log(result.nInserted);
-                callback(err, result);
-            });
-            //}
         }
     }
 }
