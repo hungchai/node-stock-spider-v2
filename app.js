@@ -91,8 +91,8 @@ function saveStockDayHistQuoteMongo(stockDayQuoteList, db) {
         var data = stockDayQuoteList;
 //        MongoClient.connect(global.mongoURI, function(err, db) {
         var lastupdate = new Date();
-        var stockProfile2Collection = db.collection('stockDayQuote');
-        var bulk = stockProfile2Collection.initializeUnorderedBulkOp({
+        var stockDayQuoteCollection = db.collection('stockDayQuote');
+        var bulk = stockDayQuote.initializeUnorderedBulkOp({
             useLegacyOps: true
         });
 
