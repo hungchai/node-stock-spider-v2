@@ -37,11 +37,11 @@ function getStockList() {
         request(stockListURL, function (error, response, body) {
             var $ = cheerio.load(body);
             var stocks = [];
-            var M18={};
+            var M18 = {};
             M18.list = {
-                add: function(symbol, chiName, engName) {
+                add: function (symbol, chiName, engName) {
                     var stock = {};
-                    stock.symbol = symbol+':HK';
+                    stock.symbol = symbol + ':HK';
                     stock.sc = chiName;
                     stock.en = engName;
                     stocks.push(stock);
@@ -123,55 +123,61 @@ function saveStockDayHistQuoteMongo(stockDayQuoteList, db) {
         var stockDayQuoteCollection = db.collection('stockDayQuote');
 
         var checkComplete = _.after(data.length,
-            function() {
-                if (errmsg != null) {
-                    callback(new Error(errmsg), '');
-                } else {
+            function () {
                     callback(null, 'finished saveStockDayHistQuoteMongo')
-                }
+
             }
         );
         var errmsg;
+
+
         for (var i = 0, len = data.length; i < len; i++) {
+            co(function*() {
 
-            var stocksymbol = data[i].symbol;
-            var stockDataset = data[i].dataset;
-            console.log('symbol:' + data[i].symbol);
-            if (stockDataset != null && stockDataset.length > 0) {
-                var bulk = stockDayQuoteCollection.initializeUnorderedBulkOp({
-                    useLegacyOps: true
-                });
-                for (var j = 0; j < stockDataset.length; j++) {
+                var stocksymbol = data[i].symbol;
+                var stockDataset = data[i].dataset;
+                console.log('symbol:' + data[i].symbol);
 
-                    var stockdaydata = {};
-                    stockdaydata.symbol = stocksymbol;
-                    stockdaydata.date = new Date(stockDataset[j].Date);
-                    stockdaydata.high = stockDataset[j].High;
-                    stockdaydata.low = stockDataset[j].Low;
-                    stockdaydata.open = stockDataset[j].Open;
-                    stockdaydata.turnover = stockDataset[j].Turnover;
-                    //batch.insert(data[i]);
-                    bulk.find({
-                        $and: [{symbol: stocksymbol}, {date: stockdaydata.date}]
-    
-                    }).upsert().replaceOne(
-                        stockdaydata
-                    );
-    
-                }
-                bulk.execute(function (err, result) {
-                    console.log(result.nInserted);
-                    if (!err)
-                        errmsg += err.message;
+                if (stockDataset != null && stockDataset.length > 0) {
+
+
+                    var bulk = stockDayQuoteCollection.initializeOrderedBulkOp({
+                        useLegacyOps: true
+                    });
+                    for (var j = 0; j < stockDataset.length; j++) {
+                        var stockdaydata = {};
+                        stockdaydata.symbol = stocksymbol;
+                        stockdaydata.date = new Date(stockDataset[j].Date);
+                        stockdaydata.high = stockDataset[j].High;
+                        stockdaydata.low = stockDataset[j].Low;
+                        stockdaydata.open = stockDataset[j].Open;
+                        stockdaydata.turnover = stockDataset[j].Turnover;
+                        //batch.insert(data[i]);
+                        bulk.find({
+                            $and: [{symbol: stocksymbol}, {date: stockdaydata.date}]
+
+                        }).upsert().replaceOne(
+                            stockdaydata
+                        );
+                    }
+                    var step2 = yield function(callback) {
+                        bulk.execute(function (err, result) {
+                            checkComplete;
+                            callback(err,result);
+                        })
+                    }
+                    console.log(stocksymbol + ' step2 completed.');
+                } else {
                     checkComplete;
-                });
-            }else
-            {
-                checkComplete;
-            }
+                }
 
-        }
 
+            }).catch(function (err, result) {
+                console.log('err: ' + err + ', result: ' + result);
+            })
+
+        };
+        //callback(null, 'finished saveStockDayHistQuoteMongo');
     }
 }
 function saveStockListMongo(stocks, db) {
@@ -212,11 +218,10 @@ function saveStockInfoMongo(stockInfos, db) {
         for (var i = 0, len = data.length; i < len; i++) {
             var info = {};
             var apiData = data[i];
-            console.log('symbol:'+apiData.symbol);
+            console.log('symbol:' + apiData.symbol);
 
             //sector transform
-            if ((apiData.sector))
-            {
+            if ((apiData.sector)) {
                 var sector_id = Object.keys(apiData.sector)[0];
                 info.sector = {};
                 for (var sectorkey in apiData.sector[sector_id]) {
@@ -278,28 +283,30 @@ MongoClient.connect(global.mongoURI, function (err, db) {
     co(function*() {
 
         var stocks = yield getStockList();
-        //var stocks = (yield getStockList());
-        var saveStocks = yield saveStockListMongo(stocks, db);
-        //stocks = stocks.slice(0,6);
-        var getStockInfoMap = stocks.map(function (stock) {
-            return getStockInfo(stock.symbol);
-        });
-        var stockInfos = yield parallel(getStockInfoMap, 20);
-        var saveStockInfos = yield saveStockInfoMongo(stockInfos, db)
-        
 
+        //var saveStocks = yield saveStockListMongo(stocks, db);
+
+        //var getStockInfoMap = stocks.map(function (stock) {
+        //    return getStockInfo(stock.symbol);
+        //});
+        //var stockInfos = yield parallel(getStockInfoMap, 20);
+        //var saveStockInfos = yield saveStockInfoMongo(stockInfos, db)
+        //
+        //
+        stocks = stocks.slice(0, 10);
         var getStockDayHistQuoteMap = stocks.map(function (stock) {
             return getstockHistDayQuoteList(stock.symbol)
-            
+
         })
         var stockDayHistQuote = yield parallel(getStockDayHistQuoteMap, 20);
         var saveStockDayQuotes = yield saveStockDayHistQuoteMongo(stockDayHistQuote, db);
-        //process.exit();
-        //var res = yield parallel(p2, 4);
-        //console.log(JSON.stringify(res))
 
+        yield process.exit(1);
 
     }).catch(function (err, result) {
         console.log('err: ' + err + ', result: ' + result);
+
     })
+
+
 })
