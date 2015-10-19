@@ -19,7 +19,7 @@ global.mongoURI = global.config.mongoDbConn;
 var stockListURL = "http://money18.on.cc/js/daily/stocklist/stockList_secCode.js"
 var stockMinutesQuoteURL = 'http://hkej.m-finance.com/charting/tomcat/mfchart?code=%s&period=1min&frame=72+HOUR';
 var stockHistDayQuoteURL = 'http://hkej.m-finance.com/charting/tomcat/mfchart';
-var stockTodayQuoteURL = 'http://hkej.m-finance.com/charting/tomcat/todaydata';
+var stockTodayQuoteURL = 'http://hkej.m-finance.com/charting/tomcat/todaydata?code=%s';
 var stockInfoURL = 'https://api.investtab.com/api/quote/%s/info';
 // registering remote methods
 //
@@ -126,15 +126,11 @@ function saveStockDayHistQuoteMongo(stockDayQuoteList, db) {
 
         co(function*() {
             for (var i = 0, len = data.length; i < len; i++) {
-
-
                 var stocksymbol = data[i].symbol;
                 var stockDataset = data[i].dataset;
                 console.log('start handle dataset of symbol:' + data[i].symbol);
 
                 if (stockDataset != null && stockDataset.length > 0) {
-
-
                     var bulk = stockDayQuoteCollection.initializeOrderedBulkOp({
                         useLegacyOps: true
                     });
@@ -165,7 +161,6 @@ function saveStockDayHistQuoteMongo(stockDayQuoteList, db) {
         ).catch(function (err, result) {
                 console.log('err: ' + err + ', result: ' + result);
             });
-        //callback(null, 'finished saveStockDayHistQuoteMongo');
     }
 }
 function saveStockListMongo(stocks, db) {
@@ -267,11 +262,57 @@ function saveStockInfoMongo(stockInfos, db) {
     //})
 }
 
+function getstockTodayQuoteList(symbol) {
+    return function (callback) {
+        request(util.format(stockTodayQuoteURL, parseInt(symbol)), function (error, response, body) {
+            if (!error && response.statusCode == 200) {
+                var d = JSON.parse(body);
+                d.symbol = symbol;
+                d.date = new Date(d.Date);
+                delete d.Date;
+                console.log('getstockTodayQuoteList:' + d.symbol);
+                callback(error, d);
+            } else {
+                callback(null, null);
+            }
+        });
+    }
+}
+
+function saveStockTodayQuote(stockTodayQuote, db) {
+    return function (callback) {
+        if (stockTodayQuote != null) {
+            var sdqCollection = db.collection('stockDayQuote');
+            var stockTodayData = {};
+            stockTodayData.symbol = stockTodayQuote.symbol;
+            stockTodayData.date = new Date(stockTodayQuote.date.getFullYear(), stockTodayQuote.date.getMonth(), stockTodayQuote.date.getDate());
+            stockTodayData.high = stockTodayQuote.High;
+            stockTodayData.low = stockTodayQuote.Low;
+            stockTodayData.open = stockTodayQuote.Open;
+            stockTodayData.turnover = stockTodayQuote.Turnover;
+            console.log("save Today Quote:" + stockTodayQuote.symbol);
+            sdqCollection.update(
+                {$and: [{'symbol': stockTodayData.symbol}, {'date': stockTodayData.date}]}
+                , stockTodayData
+                , {upsert: true}
+                , function (err, result) {
+                    console.log("saved Today Quote:" + stockTodayQuote.symbol);
+                    callback(err, result.ok);
+                }
+            )
+        } else {
+            callback(null, null);
+        }
+    }
+
+}
+
+
 MongoClient.connect(global.mongoURI, function (err, db) {
     co(function*() {
 
         var stocks = yield getStockList();
-
+        //stocks = stocks.slice(0, 10);
         var saveStocks = yield saveStockListMongo(stocks, db);
 
         var getStockInfoMap = stocks.map(function (stock) {
@@ -288,6 +329,21 @@ MongoClient.connect(global.mongoURI, function (err, db) {
         var stockDayHistQuote = yield parallel(getStockDayHistQuoteMap, 20);
         var saveStockDayQuotes = yield saveStockDayHistQuoteMongo(stockDayHistQuote, db);
 
+        var getstockTodayQuoteListMap = stocks.map(function (stock) {
+            return getstockTodayQuoteList(stock.symbol);
+        });
+
+        var stockTodayQuotes = yield parallel(getstockTodayQuoteListMap, 20);
+
+        var saveStockTodayQuoteMap = stockTodayQuotes.map(
+            function (stockTodayQuote) {
+                return saveStockTodayQuote(stockTodayQuote, db)
+            }
+        )
+
+        var saveStockTodayQuotes = yield parallel(saveStockTodayQuoteMap, 20);
+        return saveStockTodayQuotes;
+
     }).then
     (function (val) {
         process.exit(1);
@@ -295,6 +351,7 @@ MongoClient.connect(global.mongoURI, function (err, db) {
     })
         .catch(function (err, result) {
             console.log('err: ' + err + ', result: ' + result);
+            process.exit(0);
 
         })
 
