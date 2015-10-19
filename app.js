@@ -137,6 +137,7 @@ function saveStockDayHistQuoteMongo(stockDayQuoteList, db) {
                     for (var j = 0; j < stockDataset.length; j++) {
                         var stockdaydata = {};
                         stockdaydata.symbol = stocksymbol;
+                        //TODO: fixed the date to be UTC
                         stockdaydata.date = new Date(stockDataset[j].Date);
                         stockdaydata.high = stockDataset[j].High;
                         stockdaydata.low = stockDataset[j].Low;
@@ -173,13 +174,15 @@ function saveStockListMongo(stocks, db) {
             useLegacyOps: true
         });
         for (var i = 0, len = data.length; i < len; i++) {
-            data[i]["lastupdate"] = lastupdate;
-            //batch.insert(data[i]);
-            bulk.find({
-                symbol: data[i].symbol,
-            }).upsert().replaceOne(
-                data[i]
-            );
+            if (data != null) {
+                data[i]["lastupdate"] = lastupdate;
+                //batch.insert(data[i]);
+                bulk.find({
+                    symbol: data[i].symbol,
+                }).upsert().replaceOne(
+                    data[i]
+                );
+            }
 
         }
         bulk.execute(function (err, result) {
@@ -285,14 +288,15 @@ function saveStockTodayQuote(stockTodayQuote, db) {
             var sdqCollection = db.collection('stockDayQuote');
             var stockTodayData = {};
             stockTodayData.symbol = stockTodayQuote.symbol;
-            stockTodayData.date = new Date(stockTodayQuote.date.getFullYear(), stockTodayQuote.date.getMonth(), stockTodayQuote.date.getDate());
+            stockTodayData.date = new Date(Date.UTC(stockTodayQuote.date.getFullYear(), stockTodayQuote.date.getMonth(), stockTodayQuote.date.getDate(), 0, 0, 0));
+            //stockTodayData.date = new Date(stockTodayQuote.date);
             stockTodayData.high = stockTodayQuote.High;
             stockTodayData.low = stockTodayQuote.Low;
             stockTodayData.open = stockTodayQuote.Open;
             stockTodayData.turnover = stockTodayQuote.Turnover;
             console.log("save Today Quote:" + stockTodayQuote.symbol);
-            sdqCollection.update(
-                {$and: [{'symbol': stockTodayData.symbol}, {'date': stockTodayData.date}]}
+            sdqCollection.updateOne(
+                {$and: [{symbol: stockTodayData.symbol}, {date: stockTodayData.date}]}
                 , stockTodayData
                 , {upsert: true}
                 , function (err, result) {
@@ -321,7 +325,7 @@ MongoClient.connect(global.mongoURI, function (err, db) {
         var stockInfos = yield parallel(getStockInfoMap, 20);
         var saveStockInfos = yield saveStockInfoMongo(stockInfos, db)
 
-        //stocks = stocks.slice(0, 10);
+
         var getStockDayHistQuoteMap = stocks.map(function (stock) {
             return getstockHistDayQuoteList(stock.symbol)
 
