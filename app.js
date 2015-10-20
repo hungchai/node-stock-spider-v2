@@ -156,7 +156,7 @@ function saveStockDayHistQuoteMongo(stockDayQuoteList, db) {
                         );
                     }
                     var dsbulk = bulk.execute();
-                    console.log(stocksymbol + ' bulk excute ds completed.');
+                    console.log(stocksymbol + ' bulk execute ds completed.');
                 }
             }
 
@@ -208,7 +208,7 @@ function saveStockInfoMongo(stockInfos, db) {
         for (var i = 0, len = data.length; i < len; i++) {
             var info = {};
             var apiData = data[i];
-            console.log('symbol:' + apiData.symbol);
+            console.log('saveStockInfoMongo symbol:' + apiData.symbol);
 
             //sector transform
             if ((apiData.sector)) {
