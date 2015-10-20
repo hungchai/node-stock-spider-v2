@@ -63,7 +63,7 @@ function getStockInfo(stockSymbol) {
             console.log("getStockInfo:" + util.format(stockInfoURL, stockSymbol));
             if (error || response.statusCode != 200) {
                 console.log("receive:" + util.format(stockInfoURL, stockSymbol));
-                callback(error, NaN);
+                callback(error, null);
             } else {
                 console.log("receive:" + util.format(stockInfoURL, stockSymbol));
                 callback(error, JSON.parse(body));
@@ -104,6 +104,9 @@ function getStockQuoteList(stockNum, parameter, callback) {
                 var d = JSON.parse(body);
                 d.symbol = stockNum
                 callback(error, d);
+            }else
+            {
+                callback(null, null);
             }
         })
 
@@ -117,12 +120,13 @@ function getstockHistDayQuoteList(stockNum) {
 
 function saveStockDayHistQuoteMongo(stockDayQuoteList, db) {
     return function (callback) {
-        var data = stockDayQuoteList;
+        var rowdata = stockDayQuoteList;
 //        MongoClient.connect(global.mongoURI, function(err, db) {
         var lastupdate = new Date();
         var stockDayQuoteCollection = db.collection('stockDayQuote');
-
         var errmsg;
+//remove null object
+        var data = _.filter(stockDayQuoteList, function(stockDayQuote){ return stockDayQuote != null; });
 
         co(function*() {
             for (var i = 0, len = data.length; i < len; i++) {
@@ -345,7 +349,7 @@ MongoClient.connect(global.mongoURI, function (err, db) {
             }
         )
 
-        var saveStockTodayQuotes = yield parallel(saveStockTodayQuoteMap, 20);
+        var saveStockTodayQuotes = yield parallel(saveStockTodayQuoteMap, 5);
         return saveStockTodayQuotes;
 
     }).then
