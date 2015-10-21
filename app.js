@@ -146,6 +146,7 @@ function saveStockDayHistQuoteMongo(stockDayQuoteList, db) {
                         stockdaydata.high = stockDataset[j].High;
                         stockdaydata.low = stockDataset[j].Low;
                         stockdaydata.open = stockDataset[j].Open;
+                        stockdaydata.close = stockDataset[j].Close;
                         stockdaydata.turnover = stockDataset[j].Turnover;
                         //batch.insert(data[i]);
                         bulk.find({
@@ -297,6 +298,7 @@ function saveStockTodayQuote(stockTodayQuote, db) {
             stockTodayData.high = stockTodayQuote.High;
             stockTodayData.low = stockTodayQuote.Low;
             stockTodayData.open = stockTodayQuote.Open;
+            stockTodayData.close = stockTodayQuote.Close;
             stockTodayData.turnover = stockTodayQuote.Turnover;
             console.log("save Today Quote:" + stockTodayQuote.symbol);
             sdqCollection.updateOne(
