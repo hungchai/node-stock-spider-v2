@@ -319,6 +319,8 @@ function saveStockTodayQuote(stockTodayQuote, db) {
 
 
 MongoClient.connect(global.mongoURI, function (err, db) {
+    var argv1 = process.argv[2];
+
     co(function*() {
 
         var stocks = yield getStockList();
@@ -331,14 +333,14 @@ MongoClient.connect(global.mongoURI, function (err, db) {
         var stockInfos = yield parallel(getStockInfoMap, 20);
         var saveStockInfos = yield saveStockInfoMongo(stockInfos, db)
 
+        if (argv1 == null) {
+            var getStockDayHistQuoteMap = stocks.map(function (stock) {
+                return getstockHistDayQuoteList(stock.symbol)
 
-        var getStockDayHistQuoteMap = stocks.map(function (stock) {
-            return getstockHistDayQuoteList(stock.symbol)
-
-        })
-        var stockDayHistQuote = yield parallel(getStockDayHistQuoteMap, 20);
-        var saveStockDayQuotes = yield saveStockDayHistQuoteMongo(stockDayHistQuote, db);
-
+            })
+            var stockDayHistQuote = yield parallel(getStockDayHistQuoteMap, 20);
+            var saveStockDayHistQuotes = yield saveStockDayHistQuoteMongo(stockDayHistQuote, db);
+        }
         var getstockTodayQuoteListMap = stocks.map(function (stock) {
             return getstockTodayQuoteList(stock.symbol);
         });
