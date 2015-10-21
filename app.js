@@ -349,7 +349,7 @@ MongoClient.connect(global.mongoURI, function (err, db) {
             }
         )
 
-        var saveStockTodayQuotes = yield parallel(saveStockTodayQuoteMap, 5);
+        var saveStockTodayQuotes = yield parallel(saveStockTodayQuoteMap, 2);
         return saveStockTodayQuotes;
 
     }).then
