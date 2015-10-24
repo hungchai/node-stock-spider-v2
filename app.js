@@ -203,10 +203,7 @@ function saveStockInfoMongo(stockInfos, db) {
         var data = stockInfos;
         //MongoClient.connect(global.mongoURI, function(err, db) {
         //var lastupdate = new Date();
-        var stockProfile2Collection = db.collection('stockProfile');
-        var bulk = stockProfile2Collection.initializeUnorderedBulkOp({
-            useLegacyOps: true
-        });
+
         for (var i = 0, len = data.length; i < len; i++) {
             var info = {};
             var apiData = data[i];
@@ -214,7 +211,10 @@ function saveStockInfoMongo(stockInfos, db) {
                 continue;
             else {
                 console.log('saveStockInfoMongo symbol:' + apiData.symbol);
-
+                var stockProfile2Collection = db.collection('stockProfile');
+                var bulk = stockProfile2Collection.initializeUnorderedBulkOp({
+                    useLegacyOps: true
+                });
                 //sector transform
                 if ((apiData.sector)) {
                     var sector_id = Object.keys(apiData.sector)[0];
