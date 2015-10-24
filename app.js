@@ -104,8 +104,7 @@ function getStockQuoteList(stockNum, parameter, callback) {
                 var d = JSON.parse(body);
                 d.symbol = stockNum
                 callback(error, d);
-            }else
-            {
+            } else {
                 callback(null, null);
             }
         })
@@ -126,7 +125,9 @@ function saveStockDayHistQuoteMongo(stockDayQuoteList, db) {
         var stockDayQuoteCollection = db.collection('stockDayQuote');
         var errmsg;
 //remove null object
-        var data = _.filter(stockDayQuoteList, function(stockDayQuote){ return stockDayQuote != null; });
+        var data = _.filter(stockDayQuoteList, function (stockDayQuote) {
+            return stockDayQuote != null;
+        });
 
         co(function*() {
             for (var i = 0, len = data.length; i < len; i++) {
@@ -209,63 +210,66 @@ function saveStockInfoMongo(stockInfos, db) {
         for (var i = 0, len = data.length; i < len; i++) {
             var info = {};
             var apiData = data[i];
-            console.log('saveStockInfoMongo symbol:' + apiData.symbol);
+            if (apiData == null)
+                continue;
+            else {
+                console.log('saveStockInfoMongo symbol:' + apiData.symbol);
 
-            //sector transform
-            if ((apiData.sector)) {
-                var sector_id = Object.keys(apiData.sector)[0];
-                info.sector = {};
-                for (var sectorkey in apiData.sector[sector_id]) {
-                    info.sector[sectorkey] = apiData.sector[sector_id][sectorkey];
+                //sector transform
+                if ((apiData.sector)) {
+                    var sector_id = Object.keys(apiData.sector)[0];
+                    info.sector = {};
+                    for (var sectorkey in apiData.sector[sector_id]) {
+                        info.sector[sectorkey] = apiData.sector[sector_id][sectorkey];
+                    }
                 }
+
+                //sub industry transform
+                if ((apiData.sub_industry)) {
+                    var sub_industry_id = Object.keys(apiData.sub_industry)[0];
+                    info.sub_industry = {};
+                    for (var sub_industry_key in apiData.sub_industry[sub_industry_id]) {
+                        info.sub_industry[sub_industry_key] = apiData.sub_industry[sub_industry_id][sub_industry_key];
+                    }
+                }
+                // industry transform
+                if ((apiData.industry)) {
+                    var industry_id = Object.keys(apiData.industry)[0];
+                    info.industry = {};
+                    for (var industry_key in apiData.industry[industry_id]) {
+                        info.industry[industry_key] = apiData.industry[industry_id][industry_key];
+                    }
+                }
+
+                info.trading_currency = apiData.trading_currency;
+                info.board_amount = apiData.board_amount;
+                info.par_currency = apiData.par_currency;
+                info.stock_type = apiData.stock_type;
+                info.fin_year = apiData.fin_year;
+                info.listing_date = apiData.listing_date;
+                info.exchange = apiData.exchange;
+                info.board_lot = apiData.board_lot;
+                info.instrument_class = apiData.instrument_class;
+
+                //batch.insert(data[i]);
+                bulk.find({
+                    symbol: data[i].symbol
+
+                }).update({
+                    $set: {
+                        info: info
+                    },
+                    $currentDate: {
+                        lastupdate: true
+                    }
+                });
+
+                bulk.execute(function (err, result) {
+                    console.log(result.nInserted);
+                    callback(err, result);
+                });
             }
-
-            //sub industry transform
-            if ((apiData.sub_industry)) {
-                var sub_industry_id = Object.keys(apiData.sub_industry)[0];
-                info.sub_industry = {};
-                for (var sub_industry_key in apiData.sub_industry[sub_industry_id]) {
-                    info.sub_industry[sub_industry_key] = apiData.sub_industry[sub_industry_id][sub_industry_key];
-                }
-            }
-            // industry transform
-            if ((apiData.industry)) {
-                var industry_id = Object.keys(apiData.industry)[0];
-                info.industry = {};
-                for (var industry_key in apiData.industry[industry_id]) {
-                    info.industry[industry_key] = apiData.industry[industry_id][industry_key];
-                }
-            }
-
-            info.trading_currency = apiData.trading_currency;
-            info.board_amount = apiData.board_amount;
-            info.par_currency = apiData.par_currency;
-            info.stock_type = apiData.stock_type;
-            info.fin_year = apiData.fin_year;
-            info.listing_date = apiData.listing_date;
-            info.exchange = apiData.exchange;
-            info.board_lot = apiData.board_lot;
-            info.instrument_class = apiData.instrument_class;
-
-            //batch.insert(data[i]);
-            bulk.find({
-                symbol: data[i].symbol
-
-            }).update({
-                $set: {
-                    info: info
-                },
-                $currentDate: {
-                    lastupdate: true
-                }
-            });
         }
-        bulk.execute(function (err, result) {
-            console.log(result.nInserted);
-            callback(err, result);
-        });
-
-
     }
     //})
 }
@@ -293,7 +297,7 @@ function saveStockTodayQuote(stockTodayQuote, db) {
             var sdqCollection = db.collection('stockDayQuote');
             var stockTodayData = {};
             stockTodayData.symbol = stockTodayQuote.symbol;
-            stockTodayData.date = new Date(Date.UTC(stockTodayQuote.date.getFullYear(), stockTodayQuote.date.getMonth(), stockTodayQuote.date.getDate(), 0, 0, 0));
+            stockTodayData.date = new Date(stockTodayQuote.date.getFullYear(), stockTodayQuote.date.getMonth(), stockTodayQuote.date.getDate(), 0, 0, 0);
             //stockTodayData.date = new Date(stockTodayQuote.date);
             stockTodayData.high = stockTodayQuote.High;
             stockTodayData.low = stockTodayQuote.Low;
