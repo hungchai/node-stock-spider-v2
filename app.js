@@ -148,7 +148,8 @@ function saveStockDayHistQuoteMongo(stockDayQuoteList, db) {
                         var stockdaydata = {};
                         stockdaydata.symbol = stocksymbol;
                         //TODO: fixed the date to be UTC
-                        stockdaydata.date = new Date(stockDataset[j].Date);
+                        var dateSetDate = new Date(stockDataset[j].Date);
+                        stockdaydata.date = new Date(dateSetDate.getFullYear(), dateSetDate.getMonth(), dateSetDate.getDate(), 0, 0, 0);
                         stockdaydata.high = stockDataset[j].High;
                         stockdaydata.low = stockDataset[j].Low;
                         stockdaydata.open = stockDataset[j].Open;
