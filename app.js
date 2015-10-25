@@ -10,7 +10,12 @@ var cheerio = require('cheerio');
 var ent = require('ent');
 var _ = require("underscore");
 
-global.mongoURI = global.config.mongoDbConn;
+try {
+    global.mongoURI = global.config.mongoDbConnlocal;
+}
+catch (err) {
+    global.mongoURI = global.config.mongoDbConn;
+}
 
 //mongoose.connect(config[config.mongoDbConn[0]].URI);
 //sss
@@ -357,7 +362,7 @@ MongoClient.connect(global.mongoURI, function (err, db) {
             }
         )
 
-        var saveStockTodayQuotes = yield parallel(saveStockTodayQuoteMap, 2);
+        var saveStockTodayQuotes = yield (saveStockTodayQuoteMap);
         return saveStockTodayQuotes;
 
     }).then
