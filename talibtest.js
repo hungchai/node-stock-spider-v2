@@ -1,6 +1,10 @@
 /**
  * Created by tomma on 6/10/15.
  */
+global.config = require('./config/config.json');
+var mongoose = require('mongoose');
+var MongoClient = require('mongodb').MongoClient;
+var co = require('co');
 var talib = require('talib');
 var util = require('util');
 console.log("TALib Version: " + talib.version);
@@ -24,3 +28,5 @@ request(util.format(stockMarketData, '00700'), function(error, response, body) {
 
     });
 });
+
+
