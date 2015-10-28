@@ -2,7 +2,7 @@ var mongoose = require('mongoose');
 var Schema = mongoose.Schema;
 
 var stockDayQuoteSchema = new Schema({
-    'symbol': string,
+    'symbol': String,
     'date': Date,
     'high': Number,
     'low': Number,
