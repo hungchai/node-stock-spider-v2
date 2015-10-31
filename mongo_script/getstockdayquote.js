@@ -17,29 +17,34 @@ db.stockDayQuote.aggregate(
         },
 
         // Stage 3
-        {
-            $group: {
-                "_id": "$symbol",
-                "highs": {
-                    "$addToSet": "$high"
-                },
-                "lows": {
-                    "$addToSet": "$low"
-                },
-                "opens": {
-                    "$addToSet": "$open"
-                },
-                "closes": {
-                    "$addToSet": "$close"
-                },
-                "volumes": {
-                    "$addToSet": "$volume"
-                },
-                "turnover": {
-                    "$addToSet": "turnover"
-                }
+    {
+        $group: {
+            "_id": "$symbol",
+            "highs": {
+                "$push": "$high"
+            },
+            "lows": {
+                "$push": "$low"
+            },
+            "opens": {
+                "$push": "$open"
+            },
+            "closes": {
+                "$push": "$close"
+            },
+            "volumes": {
+                "$push": "$volume"
+            },
+            "turnover": {
+                "$push": "$turnover"
             }
         }
+    },
+
+        // Stage 4
+        {
+            $out: "symbolQuote"
+    }
     ],
 
     // Options

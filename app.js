@@ -150,12 +150,12 @@ function saveStockDayHistQuoteMongo(stockDayQuoteList, db) {
                         //TODO: fixed the date to be UTC
                         var dateSetDate = new Date(stockDataset[j].Date);
                         stockdaydata.date = new Date(dateSetDate.getFullYear(), dateSetDate.getMonth(), dateSetDate.getDate(), 0, 0, 0);
-                        stockdaydata.high = stockDataset[j].High;
-                        stockdaydata.low = stockDataset[j].Low;
-                        stockdaydata.open = stockDataset[j].Open;
-                        stockdaydata.close = stockDataset[j].Close;
-                        stockdaydata.turnover = stockDataset[j].Turnover;
-                        stockdaydata.volume = stockDataset[j].Volume;
+                        stockdaydata.high = parseFloat(stockDataset[j].High);
+                        stockdaydata.low = parseFloat(stockDataset[j].Low);
+                        stockdaydata.open = parseFloat(stockDataset[j].Open);
+                        stockdaydata.close = parseFloat(stockDataset[j].Close);
+                        stockdaydata.turnover = parseFloat(stockDataset[j].Turnover);
+                        stockdaydata.volume = parseFloat(stockDataset[j].Volume);
                         //batch.insert(data[i]);
                         bulk.find({
                             $and: [{symbol: stocksymbol}, {date: stockdaydata.date}]
@@ -306,12 +306,12 @@ function saveStockTodayQuote(stockTodayQuote, db) {
             stockTodayData.symbol = stockTodayQuote.symbol;
             stockTodayData.date = new Date(stockTodayQuote.date.getFullYear(), stockTodayQuote.date.getMonth(), stockTodayQuote.date.getDate(), 0, 0, 0);
             //stockTodayData.date = new Date(stockTodayQuote.date);
-            stockTodayData.high = stockTodayQuote.High;
-            stockTodayData.low = stockTodayQuote.Low;
-            stockTodayData.open = stockTodayQuote.Open;
-            stockTodayData.close = stockTodayQuote.Close;
-            stockTodayData.turnover = stockTodayQuote.Turnover;
-            stockTodayData.volume = stockTodayQuote.Volume;
+            stockTodayData.high = parseFloat(stockTodayQuote.High);
+            stockTodayData.low = parseFloat(stockTodayQuote.Low);
+            stockTodayData.open = parseFloat(stockTodayQuote.Open);
+            stockTodayData.close = parseFloat(stockTodayQuote.Close);
+            stockTodayData.turnover = parseFloat(stockTodayQuote.Turnover);
+            stockTodayData.volume = parseFloat(stockTodayQuote.Volume);
             console.log("save Today Quote:" + stockTodayQuote.symbol);
             sdqCollection.updateOne(
                 {$and: [{symbol: stockTodayData.symbol}, {date: stockTodayData.date}]}
