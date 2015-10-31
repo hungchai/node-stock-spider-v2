@@ -33,10 +33,10 @@ db.stockDayQuote.aggregate(
                 "$push": "$close"
             },
             "volumes": {
-                "$push": "$volume"
+                "$push": {$ifNull: ["$volume", 0]}
             },
             "turnover": {
-                "$push": "$turnover"
+                "$push": {$ifNull: ["$turnover", 0]}
             }
         }
     },

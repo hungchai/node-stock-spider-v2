@@ -22,7 +22,8 @@ mongoose.connect(global.mongoURI);
 co(
     function*() {
 
-        var a = yield stockDAO.getStockDayQuote('00968:HK', StockDayQuoteModel);
+        //var a = yield stockDAO.getStockDayQuote('00968:HK', StockDayQuoteModel);
+        var a = yield stockDAO.transformStockDayQuote(StockDayQuoteModel);
         return a;
     }
 ).then
