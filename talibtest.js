@@ -22,9 +22,22 @@ mongoose.connect(global.mongoURI);
 co(
     function*() {
 
-        //var a = yield stockDAO.getStockDayQuote('00968:HK', StockDayQuoteModel);
-        var a = yield stockDAO.transformStockDayQuote(StockDayQuoteModel);
-        return a;
+        var stock968 = yield stockDAO.getStockDayQuote('00968:HK', StockDayQuoteModel);
+        talib.execute({
+            name: "SMA",
+            startIdx: 0,
+            endIdx: stock968.closes.length - 1,
+            inReal: marketData.c,
+            optInTimePeriod: 10
+        }, function (result) {
+            var outreal = result.result.outReal;
+            console.log("SMA(10) Function Results:");
+            console.dir(outreal.pop());
+
+        });
+        return stock968;
+
+
     }
 ).then
 (function (val) {

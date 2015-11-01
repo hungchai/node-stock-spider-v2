@@ -9,13 +9,17 @@ var request = require('request');
 var cheerio = require('cheerio');
 var ent = require('ent');
 var _ = require("underscore");
-
+var stockDAO = require('./DAL/stockDAO.js');
 try {
     global.mongoURI = global.config.mongoDbConnlocal;
 }
 catch (err) {
     global.mongoURI = global.config.mongoDbConn;
 }
+
+mongoose.connect(global.mongoURI);
+require('./Schema/stockDayQuoteSchema.js')();
+var StockDayQuoteModel = mongoose.model("StockDayQuote");
 
 //mongoose.connect(config[config.mongoDbConn[0]].URI);
 //sss
@@ -366,7 +370,10 @@ MongoClient.connect(global.mongoURI, function (err, db) {
         )
 
         var saveStockTodayQuotes = yield (saveStockTodayQuoteMap);
-        return saveStockTodayQuotes;
+
+        var transformStockDayQuote = yield stockDAO.transformStockDayQuote(StockDayQuoteModel);
+
+        return transformStockDayQuote;
 
     }).then
     (function (val) {
