@@ -18,6 +18,7 @@
     "request": "^2.60.0",
     "spooky": "^0.2.5",
     "talib": "^1.0.2",
+    "thunkify": "^2.1.2",
     "underscore": "^1.8.3"
   },
   "devDependencies": {},

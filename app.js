@@ -120,6 +120,7 @@ function getStockQuoteList(stockNum, parameter, callback) {
 
     }
 }
+
 function getstockHistDayQuoteList(stockNum) {
     return function (callback) {
         getStockQuoteList(stockNum, 'period=day&frame=2+YEAR')(callback);
@@ -181,6 +182,7 @@ function saveStockDayHistQuoteMongo(stockDayQuoteList, db) {
             });
     }
 }
+
 function saveStockListMongo(stocks, db) {
     return function (callback) {
         var data = stocks;
