@@ -52,7 +52,7 @@ co(
                     optInTimePeriod: 9
                 });
                 if (result.outReal[result.outReal.length - 1] < 30) {
-                    outresult.push({'symbol': symbol, 'RSI': result.outReal[result.outReal.length - 1]});
+                    outresult.push({'symbol': symbol, 'sc_name':stockProfiles[i].sc ,'RSI': result.outReal[result.outReal.length - 1]});
                 }
             }
 
