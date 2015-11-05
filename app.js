@@ -31,15 +31,6 @@ var stockHistDayQuoteURL = 'http://hkej.m-finance.com/charting/tomcat/mfchart';
 var stockTodayQuoteURL = 'http://hkej.m-finance.com/charting/tomcat/todaydata?code=%s';
 var stockInfoURL = 'https://api.investtab.com/api/quote/%s/info';
 // registering remote methods
-//
-//function getStockList() {
-//    return function (callback) {
-//        request(stockListURL, function (error, response, body) {
-//            callback(error, JSON.parse(body));
-//        });
-//
-//    };
-//};
 
 function getStockList() {
     return function (callback) {
@@ -63,7 +54,6 @@ function getStockList() {
 
     };
 };
-
 
 //e.g: stockSymbol = 00700.HK
 function getStockInfo(stockSymbol) {
@@ -372,7 +362,7 @@ MongoClient.connect(global.mongoURI, function (err, db) {
         )
 
         var saveStockTodayQuotes = yield (saveStockTodayQuoteMap);
-
+        Console.write("Transforming StockDayQuote into array.");
         var transformStockDayQuote = yield stockDAO.transformStockDayQuote(StockDayQuoteModel);
 
         return transformStockDayQuote;

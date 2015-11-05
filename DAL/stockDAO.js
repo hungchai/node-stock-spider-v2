@@ -96,7 +96,7 @@ var transformStockDayQuote = function (StockDayQuoteModel) {
                         }
                     }
                 },
-                {$out: "symbolQuotesArray"}
+                {$out: "stockQuotesArray"}
             ]);
 
         aggreg.options = {allowDiskUse: true};
