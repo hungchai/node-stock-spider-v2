@@ -335,11 +335,11 @@ MongoClient.connect(global.mongoURI, function (err, db) {
         //stocks = stocks.slice(0, 10);
         var saveStocks = yield saveStockListMongo(stocks, db);
 
-        var getStockInfoMap = stocks.map(function (stock) {
-            return getStockInfo(stock.symbol);
-        });
-        var stockInfos = yield parallel(getStockInfoMap, 20);
-        var saveStockInfos = yield saveStockInfoMongo(stockInfos, db)
+        //var getStockInfoMap = stocks.map(function (stock) {
+        //    return getStockInfo(stock.symbol);
+        //});
+        //var stockInfos = yield parallel(getStockInfoMap, 20);
+        //var saveStockInfos = yield saveStockInfoMongo(stockInfos, db)
 
         if (argv1 == null) {
             var getStockDayHistQuoteMap = stocks.map(function (stock) {
@@ -362,7 +362,7 @@ MongoClient.connect(global.mongoURI, function (err, db) {
         )
 
         var saveStockTodayQuotes = yield (saveStockTodayQuoteMap);
-        Console.write("Transforming StockDayQuote into array.");
+        console.write("Transforming StockDayQuote into array.");
         var transformStockDayQuote = yield stockDAO.transformStockDayQuote(StockDayQuoteModel);
 
         return transformStockDayQuote;
