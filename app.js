@@ -362,7 +362,7 @@ MongoClient.connect(global.mongoURI, function (err, db) {
         )
 
         var saveStockTodayQuotes = yield (saveStockTodayQuoteMap);
-        console.write("Transforming StockDayQuote into array.");
+        console.log("Transforming StockDayQuote into array.");
         var transformStockDayQuote = yield stockDAO.transformStockDayQuote(StockDayQuoteModel);
 
         return transformStockDayQuote;

@@ -6,6 +6,9 @@ var thunkify = require('thunkify');
 var talib = require('talib');
 var util = require('util');
 var _ = require("underscore");
+var json2xls = require('json2xls');
+var fs = require('fs');
+
 console.log("TALib Version: " + talib.version);
 var stockDAO = require('./DAL/stockDAO.js');
 require('./Schema/stockDayQuoteSchema.js')();
@@ -32,11 +35,12 @@ catch (err) {
 mongoose.connect(global.mongoURI);
 var rsi_outresult = [];
 var macd_outresult = [];
+var CDL3OUTSIDE_result = []
 co(
     function*() {
         var stockQuotesArrays = yield StockQuotesArrayModel.find().exec();
         //var stockquote = yield stockDAO.getStockDayQuote('00968:HK', StockDayQuoteModel);
-        return _.sortBy(stockQuotesArrays,'_id');
+        return _.sortBy(stockQuotesArrays, '_id');
 
     }
 ).then
@@ -44,11 +48,11 @@ co(
     //console.dir(stockProfiles);
     co(
         function*() {
-            for(var i = 0; i<stockQuotesArrays.length; i++) {
+            for (var i = 0; i < stockQuotesArrays.length; i++) {
                 var symbol = stockQuotesArrays[i]._id;
-                console.log('Progress: ' +symbol);
-                var stockProfile = yield StockProfileModel.findOne({'symbol':symbol}).exec();
-             //   var stockquote = yield stockDAO.getStockDayQuote(symbol, StockDayQuoteModel);
+                console.log('Progress: ' + symbol);
+                var stockProfile = yield StockProfileModel.findOne({'symbol': symbol}).exec();
+                //   var stockquote = yield stockDAO.getStockDayQuote(symbol, StockDayQuoteModel);
                 var stockquote = stockQuotesArrays[i];
                 var result = yield talibExecute({
                     name: "RSI",
@@ -58,8 +62,12 @@ co(
                     optInTimePeriod: 9
                 });
                 if (result.outReal[result.outReal.length - 1] < 30) {
-                    rsi_outresult.push({'symbol': symbol, 'sc_name':stockProfile.sc ,
-                        'currentQuote': stockquote.closes[stockquote.closes.length-1],'RSI': result.outReal[result.outReal.length - 1]});
+                    rsi_outresult.push({
+                        'symbol': symbol,
+                        'sc_name': stockProfile.sc,
+                        'currentQuote': stockquote.closes[stockquote.closes.length - 1],
+                        'RSI': result.outReal[result.outReal.length - 1]
+                    });
                 }
 
                 var resultMACD = yield talibExecute({
@@ -67,18 +75,47 @@ co(
                     startIdx: 0,
                     endIdx: stockquote.closes.length - 1,
                     inReal: stockquote.closes,
-                    optInFastPeriod: 5,
-                    optInSlowPeriod: 35,
-                    optInSignalPeriod: 5
+                    optInFastPeriod: 3,
+                    optInSlowPeriod: 50,
+                    optInSignalPeriod: 10
                 });
                 var totalCnt = parseInt(resultMACD.outMACD.length);
                 if (resultMACD.outMACD[totalCnt - 1] > resultMACD.outMACD[totalCnt - 4]
                     && resultMACD.outMACDSignal[totalCnt - 1] > resultMACD.outMACDSignal[totalCnt - 4]
                     && resultMACD.outMACDHist[totalCnt - 1] > 0 && resultMACD.outMACDHist[totalCnt - 2] < 0) {
-                    macd_outresult.push({'symbol': symbol, 'sc_name':stockProfile.sc ,'currentQuote': stockquote.closes[stockquote.closes.length-1],'MACD': resultMACD.outMACDHist[totalCnt-1]});
+                    macd_outresult.push({
+                        'symbol': symbol,
+                        'sc_name': stockProfile.sc,
+                        'currentQuote': stockquote.closes[stockquote.closes.length - 1],
+                        'MACD': resultMACD.outMACDHist[totalCnt - 1]
+                    });
+                }
+
+                var resultCDL3OUTSIDE = yield talibExecute({
+                    name: "CDL3OUTSIDE",
+                    startIdx: 0,
+                    endIdx: stockquote.closes.length - 1,
+                    high: stockquote.highs,
+                    low: stockquote.lows,
+                    close: stockquote.closes,
+                    open: stockquote.opens,
+                    optInTimePeriod: 9
+                });
+                if (resultCDL3OUTSIDE) {
+                    var totalCnt = parseInt(resultCDL3OUTSIDE.outInteger.length);
+                    CDL3OUTSIDE_result.push({
+                        'symbol': symbol,
+                        'sc_name': stockProfile.sc,
+                        'CDL3OUTSIDE': resultCDL3OUTSIDE.outInteger[totalCnt - 1]
+                    })
                 }
             }
-            console.dir(macd_outresult);
+            //console.dir(macd_outresult);
+            var CDL3outside_xls = json2xls(CDL3OUTSIDE_result);
+            fs.writeFileSync('/users/tomma/Desktop/CDL3outside.xlsx', CDL3outside_xls, 'binary');
+            var macd_outresultxls = json2xls(macd_outresult);
+            fs.writeFileSync('/users/tomma/Desktop/macd_outresult.xlsx', macd_outresultxls, 'binary');
+
             //console.dir(rsi_outresult);
             process.exit(1);
         }).catch(function (err, result) {
