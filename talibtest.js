@@ -35,7 +35,8 @@ catch (err) {
 mongoose.connect(global.mongoURI);
 var rsi_outresult = [];
 var macd_outresult = [];
-var CDL3OUTSIDE_result = []
+var CDL3OUTSIDE_result = [];
+var rsi_lt30_macd_nv_outresult = [];
 co(
     function*() {
         var stockQuotesArrays = yield StockQuotesArrayModel.find().exec();
@@ -54,21 +55,21 @@ co(
                 var stockProfile = yield StockProfileModel.findOne({'symbol': symbol}).exec();
                 //   var stockquote = yield stockDAO.getStockDayQuote(symbol, StockDayQuoteModel);
                 var stockquote = stockQuotesArrays[i];
-                var result = yield talibExecute({
+                var rsiresult = yield talibExecute({
                     name: "RSI",
                     startIdx: 0,
                     endIdx: stockquote.closes.length - 1,
                     inReal: stockquote.closes,
                     optInTimePeriod: 9
                 });
-                if (result.outReal[result.outReal.length - 1] < 30) {
-                    rsi_outresult.push({
-                        'symbol': symbol,
-                        'sc_name': stockProfile.sc,
-                        'currentQuote': stockquote.closes[stockquote.closes.length - 1],
-                        'RSI': result.outReal[result.outReal.length - 1]
-                    });
-                }
+                //if (rsiresult.outReal[rsiresult.outReal.length - 1] < 30) {
+                //    rsi_outresult.push({
+                //        'symbol': symbol,
+                //        'sc_name': stockProfile.sc,
+                //        'currentQuote': stockquote.closes[stockquote.closes.length - 1],
+                //        'RSI': result.outReal[result.outReal.length - 1]
+                //    });
+                //}
 
                 var resultMACD = yield talibExecute({
                     name: "MACD",
@@ -80,14 +81,14 @@ co(
                     optInSignalPeriod: 10
                 });
                 var totalCnt = parseInt(resultMACD.outMACD.length);
-                if (resultMACD.outMACD[totalCnt - 1] > resultMACD.outMACD[totalCnt - 4]
-                    && resultMACD.outMACDSignal[totalCnt - 1] > resultMACD.outMACDSignal[totalCnt - 4]
-                    && resultMACD.outMACDHist[totalCnt - 1] > 0 && resultMACD.outMACDHist[totalCnt - 2] < 0) {
-                    macd_outresult.push({
+                if (rsiresult.outReal[rsiresult.outReal.length - 1] < 20
+                    && resultMACD.outMACDHist[totalCnt - 1] < resultMACD.outMACDHist[totalCnt - 2] - 0.03 && resultMACD.outMACDHist[totalCnt - 2] <= 0) {
+                    rsi_lt30_macd_nv_outresult.push({
                         'symbol': symbol,
                         'sc_name': stockProfile.sc,
                         'currentQuote': stockquote.closes[stockquote.closes.length - 1],
-                        'MACD': resultMACD.outMACDHist[totalCnt - 1]
+                        'outMACDHist': resultMACD.outMACDHist[totalCnt - 1],
+                        'rsi': rsiresult.outReal[rsiresult.outReal.length - 1]
                     });
                 }
 
@@ -113,8 +114,8 @@ co(
             //console.dir(macd_outresult);
             var CDL3outside_xls = json2xls(CDL3OUTSIDE_result);
             fs.writeFileSync('/users/tomma/Desktop/CDL3outside.xlsx', CDL3outside_xls, 'binary');
-            var macd_outresultxls = json2xls(macd_outresult);
-            fs.writeFileSync('/users/tomma/Desktop/macd_outresult.xlsx', macd_outresultxls, 'binary');
+            var rsi_lt30_macd_nv_outresultxls = json2xls(rsi_lt30_macd_nv_outresult);
+            fs.writeFileSync('/users/tomma/Desktop/rsilt30_macdnve.xlsx', rsi_lt30_macd_nv_outresultxls, 'binary');
 
             //console.dir(rsi_outresult);
             process.exit(1);
