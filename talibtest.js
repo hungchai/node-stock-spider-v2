@@ -37,6 +37,7 @@ var rsi_outresult = [];
 var macd_outresult = [];
 var CDL3OUTSIDE_result = [];
 var rsi_lt30_macd_nv_outresult = [];
+var WILLR_outresult = [];
 co(
     function*() {
         var stockQuotesArrays = yield StockQuotesArrayModel.find().exec();
@@ -91,6 +92,31 @@ co(
                         'rsi': rsiresult.outReal[rsiresult.outReal.length - 1]
                     });
                 }
+                var resultWILLR = yield talibExecute({
+                    name: "WILLR",
+                    startIdx: 0,
+                    endIdx: stockquote.closes.length - 1,
+                    high: stockquote.highs,
+                    low: stockquote.lows,
+                    close: stockquote.closes,
+                    open: stockquote.opens,
+                    inReal: stockquote.closes,
+                    optInTimePeriod: 9
+                });
+                if (resultWILLR) {
+                    var totalCnt = parseInt(resultWILLR.outReal.length);
+                    if (resultWILLR.outReal[totalCnt-1] <= -90)
+                    {
+                        WILLR_outresult.push({
+                            'symbol': symbol,
+                            'sc_name': stockProfile.sc,
+                            'currentQuote': stockquote.closes[stockquote.closes.length - 1],
+                            'WILLR': resultWILLR.outReal[totalCnt-1],
+
+                        });
+
+                    }
+                }
 
                 var resultCDL3OUTSIDE = yield talibExecute({
                     name: "CDL3OUTSIDE",
@@ -100,6 +126,7 @@ co(
                     low: stockquote.lows,
                     close: stockquote.closes,
                     open: stockquote.opens,
+                    inReal: stockquote.closes,
                     optInTimePeriod: 9
                 });
                 if (resultCDL3OUTSIDE) {
@@ -110,12 +137,18 @@ co(
                         'CDL3OUTSIDE': resultCDL3OUTSIDE.outInteger[totalCnt - 1]
                     })
                 }
+
+
             }
             //console.dir(macd_outresult);
             var CDL3outside_xls = json2xls(CDL3OUTSIDE_result);
             fs.writeFileSync('/users/tomma/Desktop/CDL3outside.xlsx', CDL3outside_xls, 'binary');
             var rsi_lt30_macd_nv_outresultxls = json2xls(rsi_lt30_macd_nv_outresult);
             fs.writeFileSync('/users/tomma/Desktop/rsilt30_macdnve.xlsx', rsi_lt30_macd_nv_outresultxls, 'binary');
+
+            var resultWILLR_xls = json2xls(WILLR_outresult);
+            fs.writeFileSync('/users/tomma/Desktop/WILLR_outresult.xlsx', resultWILLR_xls, 'binary');
+
 
             //console.dir(rsi_outresult);
             process.exit(1);
