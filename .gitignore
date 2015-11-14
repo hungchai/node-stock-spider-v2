@@ -3,3 +3,19 @@ node_modules
 *.md
 
 config.json
+
+.idea/jsLibraryMappings.xml
+
+.idea/libraries/node_stock_spider_v2_node_modules.xml
+
+.idea/misc.xml
+
+.idea/modules.xml
+
+.idea/node-stock-spider-v2.iml
+
+.idea/vcs.xml
+
+.idea/watcherTasks.xml
+
+.idea/workspace.xml
