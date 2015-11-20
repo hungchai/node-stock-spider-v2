@@ -9,29 +9,44 @@ global.ent = require('ent');
 global._ = require("underscore");
 global.stockDAO = require('./DAL/stockDAO.js');
 global.money18Api = require('./marketAPI/money18Api.js');
+global.hkejApi = require('./marketAPI/hkejApi.js');
+var nodeStockSpiderDAO = require('./DAL/nodeStockSpiderDAO.js')
 
 try {
-    global.mongoURI = global.config.mongoDbConnlocal;
+    global.mongoURI = global.config.mongoDbConnlocal2;
 }
 catch (err) {
     global.mongoURI = global.config.mongoDbConn;
 }
 
-MongoClient.connect(global.mongoURI, function (err, db) {
-    var argv1 = process.argv[2];
+global.mongoose.connect(global.mongoURI);
+require('./Schema/stockProfileSchema.js')();
+require('./Schema/stockDayQuoteSchema.js')();
 
-    co(function*() {
-        var a = yield money18Api.getHKLiveStockList();
-        return a;
+var argv1 = process.argv[2];
 
-    }).then
-    (function (val) {
-        process.exit(1);
+co(function*() {
 
-    })
-        .catch(function (err, result) {
-            console.log('err: ' + err + ', result: ' + result);
-            process.exit(0);
+    var stockSymbols = yield money18Api.getHKLiveStockList();
+    yield nodeStockSpiderDAO.saveStockListMongo(global.mongoose, stockSymbols)
+
+    if (argv1 == null) {
+        var getStockDayHistQuoteMap = stockSymbols.map(function (stock) {
+            return hkejApi.getstockHistDayQuoteList(stock.symbol)
 
         })
+        var stockDayHistQuote = yield parallel(getStockDayHistQuoteMap, 20);
+        var saveStockDayHistQuotes = yield nodeStockSpiderDAO.saveStockDayHistQuoteMongo(global.mongoose, stockDayHistQuote);
+    }
+
+
+}).then
+(function (val) {
+    process.exit(1);
+
+})
+    .catch(function (err, result) {
+        console.log('err: ' + err + ', result: ' + result);
+        process.exit(0);
+
 });

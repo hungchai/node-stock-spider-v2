@@ -3,52 +3,32 @@ var cheerio = require('cheerio');
 var ent = require('ent');
 
 class StockSymbol {
-    constructor(symbol, engName, chiName) {
-        this._symbol = symbol;
-        this._engName = engName;
-        this._chiName = chiName;
+    constructor(isymbol, iengName, ichiName, ilastupdate) {
+        this.symbol = isymbol;
+        this.engName = iengName;
+        this.chiName = ichiName;
+        this.lastupdate = ilastupdate;
     }
 
-    get symbol() {
-        return this._symbol;
-    }
+    static getHKLiveStockList() {
+        return function (callback) {
+            let stockListURL = "http://money18.on.cc/js/daily/stocklist/stockList_secCode.js";
+            request(stockListURL, function (error, response, body) {
+                var $ = cheerio.load(body);
+                var stockSymbols = [];
+                var M18 = {};
+                M18.list = {
+                    add: function (symbol, chiName, engName) {
+                        var stockSymbol = new StockSymbol(symbol + ':HK', chiName, engName, new Date());
+                        stockSymbols.push(stockSymbol);
+                    }
+                };
+                eval(ent.decode(body));
+                callback(error, stockSymbols);
+            });
 
-    set symbol(n) {
-        this._symbol = n;
     }
-
-    get engName() {
-        return this._engName;
-    }
-
-    set engName(n) {
-        this._engName = n;
-    }
-
-    get chiName() {
-        return this._chiName;
-    }
-
-    set chiName(n) {
-        this._chiName = n;
     }
 }
-module.exports.StockSymbol = StockSymbol;
-module.exports.getHKLiveStockList = function () {
-    return function (callback) {
-        let stockListURL = "http://money18.on.cc/js/daily/stocklist/stockList_secCode.js";
-        request(stockListURL, function (error, response, body) {
-            var $ = cheerio.load(body);
-            var stockSymbols = [];
-            var M18 = {};
-            M18.list = {
-                add: function (symbol, chiName, engName) {
-                    var stockSymbol = new StockSymbol(symbol + ':HK', chiName, engName);
-                    stockSymbols.push(stockSymbol);
-                }
-            };
-            eval(ent.decode(body));
-            callback(error, stockSymbols);
-        });
-    };
-}
+
+module.exports = StockSymbol;

@@ -63,14 +63,7 @@ co(
                     inReal: stockquote.closes,
                     optInTimePeriod: 9
                 });
-                //if (rsiresult.outReal[rsiresult.outReal.length - 1] < 30) {
-                //    rsi_outresult.push({
-                //        'symbol': symbol,
-                //        'sc_name': stockProfile.sc,
-                //        'currentQuote': stockquote.closes[stockquote.closes.length - 1],
-                //        'RSI': result.outReal[result.outReal.length - 1]
-                //    });
-                //}
+
 
                 var resultMACD = yield talibExecute({
                     name: "MACD",
@@ -105,14 +98,15 @@ co(
                 });
                 if (resultWILLR) {
                     var totalCnt = parseInt(resultWILLR.outReal.length);
-                    if (resultWILLR.outReal[totalCnt-1] <= -90)
+                    if (resultWILLR.outReal[totalCnt - 1] <= -60 && resultMACD.outMACDHist[resultMACD.outMACDHist.length - 1] > 0 && resultMACD.outMACD[resultMACD.outMACD.length - 1] < 0)
                     {
                         WILLR_outresult.push({
                             'symbol': symbol,
                             'sc_name': stockProfile.sc,
                             'currentQuote': stockquote.closes[stockquote.closes.length - 1],
                             'WILLR': resultWILLR.outReal[totalCnt-1],
-
+                            'outMACDHist': resultMACD.outMACDHist[resultMACD.outMACDHist.length - 1],
+                            'outMACD': resultMACD.outMACD[resultMACD.outMACDHist.length - 1]
                         });
 
                     }
