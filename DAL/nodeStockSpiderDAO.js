@@ -1,4 +1,5 @@
 var co = require('co');
+var _ = require("underscore");
 
 module.exports =
 {
@@ -39,18 +40,17 @@ module.exports =
     saveStockDayHistQuoteMongo: function (mongoose, stockDayQuoteList) {
         return function (callback) {
             var rowdata = stockDayQuoteList;
-            //MongoClient.connect(global.mongoURI, function(err, db) {
-            var lastupdate = new Date();
 
-            //var stockDayQuoteCollection = db.collection('stockDayQuote');
+            var lastupdate = new Date();
             var errmsg;
+
             //remove null object
             var data = _.filter(stockDayQuoteList, function (stockDayQuote) {
                 return stockDayQuote != null;
             });
 
-            var stockDayQuoteMongo = mongoose.model('StockDayQuote');
-            var bulk = stockDayQuoteMongo.collection.initializeOrderedBulkOp({
+            var stockDayQuoteModel = mongoose.model('StockDayQuote');
+            var bulk = stockDayQuoteModel.collection.initializeOrderedBulkOp({
                 useLegacyOps: true
             });
             var bulkexecute = thunkify((callback) => {
@@ -59,7 +59,6 @@ module.exports =
                         callback(err, docs.length);
                         console.info(err.message);
                     } else {
-                        //console.info('%d potatoes were successfully stored.', docs.length);
                         callback(null, docs.length);
                     }
                 })
@@ -108,7 +107,40 @@ module.exports =
                     console.log('err: ' + err + ', result: ' + result);
                 });
         }
+    },
+
+    saveStockTodayQuote: function (mongoose, stockTodayQuote) {
+        return function (callback) {
+            if (stockTodayQuote != null) {
+                var stockDayQuoteModel = mongoose.model('StockDayQuote');
+                var stockTodayData = {};
+                stockTodayData.symbol = stockTodayQuote.symbol;
+                stockTodayData.date = new Date(stockTodayQuote.date.getFullYear(), stockTodayQuote.date.getMonth(), stockTodayQuote.date.getDate(), 0, 0, 0);
+                //stockTodayData.date = new Date(stockTodayQuote.date);
+                stockTodayData.high = parseFloat(stockTodayQuote.High);
+                stockTodayData.low = parseFloat(stockTodayQuote.Low);
+                stockTodayData.open = parseFloat(stockTodayQuote.Open);
+                stockTodayData.close = parseFloat(stockTodayQuote.Close);
+                stockTodayData.turnover = parseFloat(stockTodayQuote.Turnover);
+                stockTodayData.volume = parseFloat(stockTodayQuote.Volume);
+                console.log("save Today Quote:" + stockTodayQuote.symbol);
+
+                // var stockDayQuoteModel = new stockDayQuoteMongo(stockTodayData);
+
+                stockDayQuoteModel.collection.update(
+                    {$and: [{symbol: stockTodayData.symbol}, {date: stockTodayData.date}]}
+                    , stockTodayData
+                    , {upsert: true}
+                    , function (err, result) {
+                        console.log("saved Today Quote:" + stockTodayQuote.symbol);
+                        callback(err, result.ok);
+                    }
+                )
+            } else {
+                callback(null, null);
+            }
     }
 
+    }
 }
 

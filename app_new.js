@@ -24,6 +24,7 @@ global.mongoose.connect(global.mongoURI);
 require('./Schema/stockProfileSchema.js')();
 require('./Schema/stockDayQuoteSchema.js')();
 
+
 var argv1 = process.argv[2];
 
 co(function*() {
@@ -53,6 +54,10 @@ co(function*() {
     )
 
     var saveStockTodayQuotes = yield parallel(saveStockTodayQuoteMap, 5);
+
+    var transformStockDayQuote = yield stockDAO.transformStockDayQuote(mongoose.model('StockDayQuote'));
+
+    return transformStockDayQuote;
 
 }).then
 (function (val) {
