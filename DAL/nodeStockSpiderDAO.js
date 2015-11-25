@@ -6,8 +6,11 @@ module.exports =
 
     saveStockListMongo: function (mongoose, stockProfiles) {
         return function (callback) {
-
             var StockProfileMongo = mongoose.model('StockProfile');
+            //var db = mongoose.connection;
+            //var bulk = db.collection('StockProfile').initializeUnorderedBulkOp({
+            //    useLegacyOps: true
+            //});
             var bulk = StockProfileMongo.collection.initializeUnorderedBulkOp({
                 useLegacyOps: true
             });
@@ -92,14 +95,18 @@ module.exports =
                                 stockdaydata
                             );
                         }
-                        console.log(stocksymbol + 'add bulk completed.');
+                        console.log(stocksymbol + ' add bulk completed.');
+                    }
+                    if (i % 2000 == 0 || i === len - 1) {
+                        console.log('bulkexecuting ....');
+                        var bulkresult = yield bulkexecute();
+                        console.log('bulkexecute completed.');
                     }
                 }
 
             }).then((val)=> {
                     co(function*() {
-                        var bulkresult = yield bulkexecute();
-                        console.log('bulkexecute completed.');
+
                         callback(null, val);
                     });
                 }

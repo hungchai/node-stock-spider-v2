@@ -11,7 +11,7 @@ var ent = require('ent');
 var _ = require("underscore");
 var stockDAO = require('./DAL/stockDAO.js');
 try {
-    global.mongoURI = global.config.mongoDbConnlocal;
+    global.mongoURI = global.config.mongoDbConn;
 }
 catch (err) {
     global.mongoURI = global.config.mongoDbConn;
@@ -42,8 +42,8 @@ function getStockList() {
                 add: function (symbol, chiName, engName) {
                     var stock = {};
                     stock.symbol = symbol + ':HK';
-                    stock.sc = chiName;
-                    stock.en = engName;
+                    stock.chiName = chiName;
+                    stock.engName = engName;
                     stocks.push(stock);
                 }
             };
@@ -332,14 +332,8 @@ MongoClient.connect(global.mongoURI, function (err, db) {
     co(function*() {
 
         var stocks = yield getStockList();
-        //stocks = stocks.slice(0, 10);
-        var saveStocks = yield saveStockListMongo(stocks, db);
 
-        //var getStockInfoMap = stocks.map(function (stock) {
-        //    return getStockInfo(stock.symbol);
-        //});
-        //var stockInfos = yield parallel(getStockInfoMap, 20);
-        //var saveStockInfos = yield saveStockInfoMongo(stockInfos, db)
+        var saveStocks = yield saveStockListMongo(stocks, db);
 
         if (argv1 == null) {
             var getStockDayHistQuoteMap = stocks.map(function (stock) {
@@ -363,6 +357,7 @@ MongoClient.connect(global.mongoURI, function (err, db) {
 
         var saveStockTodayQuotes = yield (saveStockTodayQuoteMap);
         console.log("Transforming StockDayQuote into array.");
+
         var transformStockDayQuote = yield stockDAO.transformStockDayQuote(StockDayQuoteModel);
 
         return transformStockDayQuote;
