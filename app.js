@@ -64,6 +64,7 @@ mongoose.connection.on("open", function (err) {
         var saveStockTodayQuotes = yield parallel(saveStockTodayQuoteMap, 5);
         saveStockTodayQuoteMap = null;
         saveStockTodayQuotes = null;
+
         console.log("Transforming quota array table")
         var transformStockDayQuote = yield stockDAO.transformStockDayQuote(mongoose.model('StockDayQuote'));
 

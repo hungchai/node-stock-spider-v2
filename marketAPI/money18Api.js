@@ -19,7 +19,7 @@ class StockSymbol {
                 var M18 = {};
                 M18.list = {
                     add: function (symbol, chiName, engName) {
-                        var stockSymbol = new StockSymbol(symbol + ':HK', chiName, engName, new Date());
+                        var stockSymbol = new StockSymbol(symbol + ':HK', engName, chiName, new Date());
                         stockSymbols.push(stockSymbol);
                     }
                 };
