@@ -81,7 +81,8 @@ module.exports =
                             var dateSetDate = new Date(stockDataset[j].Date);
 
                             //stockdaydata.date = new Date(dateSetDate.getFullYear(), dateSetDate.getMonth(), dateSetDate.getDate(), 0, 0, 0);
-                            stockdaydata.date = moment.tz(new Date(dateSetDate.getFullYear(), dateSetDate.getMonth(), dateSetDate.getDate(), 0, 0, 0), "Asia/Hong_Kong").toDate();
+                            var hksymdate = new Date(dateSetDate.getFullYear(), dateSetDate.getMonth(), dateSetDate.getDate(), 0, 0, 0);
+                            stockdaydata.date = moment.tz(hksymdate, "Asia/Hong_Kong").toDate();
                             stockdaydata.high = parseFloat(stockDataset[j].High);
                             stockdaydata.low = parseFloat(stockDataset[j].Low);
                             stockdaydata.open = parseFloat(stockDataset[j].Open);
@@ -95,6 +96,7 @@ module.exports =
                             }).upsert().updateOne(
                                 stockdaydata
                             );
+                            hksymdate = null;
                         }
                         console.log(stocksymbol + ' add bulk completed.');
                     }
@@ -123,7 +125,8 @@ module.exports =
                 var stockDayQuoteModel = mongoose.model('StockDayQuote');
                 var stockTodayData = {};
                 stockTodayData.symbol = stockTodayQuote.symbol;
-                stockTodayData.date = moment.tz(new Date(stockTodayQuote.date.getFullYear(), stockTodayQuote.date.getMonth(), stockTodayQuote.date.getDate(), 0, 0, 0), "Asia/Hong_Kong").toDate();
+                var hksymdate = new Date(stockTodayQuote.date.getFullYear(), stockTodayQuote.date.getMonth(), stockTodayQuote.date.getDate(), 0, 0, 0);
+                stockTodayData.date = moment.tz(hksymdate, "Asia/Hong_Kong").toDate();
                 //stockTodayData.date = new Date(stockTodayQuote.date);
                 stockTodayData.high = parseFloat(stockTodayQuote.High);
                 stockTodayData.low = parseFloat(stockTodayQuote.Low);
@@ -144,6 +147,7 @@ module.exports =
                         callback(err, result.ok);
                     }
                 )
+                hksymdate = null;
             } else {
                 callback(null, null);
             }

@@ -14,7 +14,7 @@ global.hkejApi = require('./marketAPI/hkejApi.js');
 var nodeStockSpiderDAO = require('./DAL/nodeStockSpiderDAO.js')
 
 try {
-    global.mongoURI = global.config.mongoDbConnlocal;
+    global.mongoURI = global.config.mongoDbConn;
 }
 catch (err) {
     global.mongoURI = global.config.mongoDbConnlocal;
