@@ -54,6 +54,9 @@ co(
                 var symbol = stockQuotesArrays[i]._id;
                 console.log('Progress: ' + symbol);
                 var stockProfile = yield StockProfileModel.findOne({'symbol': symbol}).exec();
+                if (stockProfile == null) {
+                    continue;
+                }
                 //   var stockquote = yield stockDAO.getStockDayQuote(symbol, StockDayQuoteModel);
                 var stockquote = stockQuotesArrays[i];
                 var rsiresult = yield talibExecute({
@@ -79,7 +82,7 @@ co(
                     && resultMACD.outMACDHist[totalCnt - 1] < resultMACD.outMACDHist[totalCnt - 2] - 0.03 && resultMACD.outMACDHist[totalCnt - 2] <= 0) {
                     rsi_lt30_macd_nv_outresult.push({
                         'symbol': symbol,
-                        'sc_name': stockProfile.sc,
+                        'sc_name': stockProfile.chiName,
                         'currentQuote': stockquote.closes[stockquote.closes.length - 1],
                         'outMACDHist': resultMACD.outMACDHist[totalCnt - 1],
                         'rsi': rsiresult.outReal[rsiresult.outReal.length - 1]
@@ -98,15 +101,14 @@ co(
                 });
                 if (resultWILLR) {
                     var totalCnt = parseInt(resultWILLR.outReal.length);
-                    if (resultWILLR.outReal[totalCnt - 1] <= -60 && resultMACD.outMACDHist[resultMACD.outMACDHist.length - 1] > 0 && resultMACD.outMACD[resultMACD.outMACD.length - 1] < 0)
+                    if (resultWILLR.outReal[totalCnt - 1] <= -70 && rsiresult.outReal[rsiresult.outReal.length - 1] < 20)
                     {
                         WILLR_outresult.push({
                             'symbol': symbol,
-                            'sc_name': stockProfile.sc,
+                            'sc_name': stockProfile.chiName,
                             'currentQuote': stockquote.closes[stockquote.closes.length - 1],
                             'WILLR': resultWILLR.outReal[totalCnt-1],
-                            'outMACDHist': resultMACD.outMACDHist[resultMACD.outMACDHist.length - 1],
-                            'outMACD': resultMACD.outMACD[resultMACD.outMACDHist.length - 1]
+                            'RSI9': rsiresult.outReal[rsiresult.outReal.length - 1]
                         });
 
                     }
@@ -127,7 +129,7 @@ co(
                     var totalCnt = parseInt(resultCDL3OUTSIDE.outInteger.length);
                     CDL3OUTSIDE_result.push({
                         'symbol': symbol,
-                        'sc_name': stockProfile.sc,
+                        'sc_name': stockProfile.chiName,
                         'CDL3OUTSIDE': resultCDL3OUTSIDE.outInteger[totalCnt - 1]
                     })
                 }

@@ -1,369 +1,72 @@
 global.config = require('./config/config.json');
-var mongoose = require('mongoose');
-var MongoClient = require('mongodb').MongoClient;
-var co = require('co');
-var parallel = require('co-parallel');
-var util = require('util');
-var buf = require("buffer");
-var request = require('request');
-var cheerio = require('cheerio');
-var ent = require('ent');
-var _ = require("underscore");
-var stockDAO = require('./DAL/stockDAO.js');
+global.mongoose = require('mongoose');
+global.MongoClient = require('mongodb').MongoClient;
+global.co = require('co');
+global.parallel = require('co-parallel');
+global.thunkify = require('thunkify');
+global.util = require('util');
+global.request = require('request');
+global.ent = require('ent');
+global._ = require("underscore");
+global.stockDAO = require('./DAL/stockDAO.js');
+global.money18Api = require('./marketAPI/money18Api.js');
+global.hkejApi = require('./marketAPI/hkejApi.js');
+var nodeStockSpiderDAO = require('./DAL/nodeStockSpiderDAO.js')
+
 try {
-    global.mongoURI = global.config.mongoDbConnlocal;
-}
-catch (err) {
     global.mongoURI = global.config.mongoDbConn;
 }
+catch (err) {
+    global.mongoURI = global.config.mongoDbConnlocal;
+}
 
-mongoose.connect(global.mongoURI);
+global.mongoose.connect(global.mongoURI);
+
+require('./Schema/stockProfileSchema.js')();
 require('./Schema/stockDayQuoteSchema.js')();
-var StockDayQuoteModel = mongoose.model("StockDayQuote");
-
-//mongoose.connect(config[config.mongoDbConn[0]].URI);
-//sss
-//step 1
-//var stockListURL = 'https://api.investtab.com/api/search?limit=3000&query=hk&chart_only=false&type=stock';
-var stockListURL = "http://money18.on.cc/js/daily/stocklist/stockList_secCode.js"
-var stockMinutesQuoteURL = 'http://hkej.m-finance.com/charting/tomcat/mfchart?code=%s&period=1min&frame=72+HOUR';
-var stockHistDayQuoteURL = 'http://hkej.m-finance.com/charting/tomcat/mfchart';
-var stockTodayQuoteURL = 'http://hkej.m-finance.com/charting/tomcat/todaydata?code=%s';
-var stockInfoURL = 'https://api.investtab.com/api/quote/%s/info';
-// registering remote methods
-
-function getStockList() {
-    return function (callback) {
-        request(stockListURL, function (error, response, body) {
-            var $ = cheerio.load(body);
-            var stocks = [];
-            var M18 = {};
-            M18.list = {
-                add: function (symbol, chiName, engName) {
-                    var stock = {};
-                    stock.symbol = symbol + ':HK';
-                    stock.sc = chiName;
-                    stock.en = engName;
-                    stocks.push(stock);
-                }
-            };
-            eval(ent.decode(body));
-            callback(error, stocks);
-
-        });
-
-    };
-};
-
-//e.g: stockSymbol = 00700.HK
-function getStockInfo(stockSymbol) {
-    return function (callback) {
-        request(util.format(stockInfoURL, stockSymbol), function (error, response, body) {
-            console.log("getStockInfo:" + util.format(stockInfoURL, stockSymbol));
-            if (error || response.statusCode != 200) {
-                console.log("receive:" + util.format(stockInfoURL, stockSymbol));
-                callback(error, null);
-            } else {
-                console.log("receive:" + util.format(stockInfoURL, stockSymbol));
-                callback(error, JSON.parse(body));
-            }
-        });
-
-    };
-}
-//e.g: stockNum = 700
-function stockMinQuoteList(stockNum) {
-    return function (callback) {
-        request(util.format(stockMinQuoteURL, parseInt(stockNum)), function (error, response, body) {
-            if (!error && response.statusCode == 200) {
-                callback(error, JSON.parse(body));
-            }
-        })
-
-    };
-}
-
-function getStockQuoteList(stockNum, parameter, callback) {
-    return function (callback) {
-        console.log("getStockQuoteList: " + stockNum);
-        var formBody = util.format('code=%s&%s', parseInt(stockNum), parameter);
-        var contentLength = formBody.length;
-        request({
-            headers: {
-                'Content-Length': contentLength,
-                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-                'Referer': util.format('http://stock360.hkej.com/quotePlus/%s', parseInt(stockNum))
-            },
-            uri: stockHistDayQuoteURL,
-            body: formBody,
-            method: 'POST'
-        }, function (error, response, body) {
-            if (!error && response.statusCode == 200) {
-                console.log("receive: " + stockNum);
-                var d = JSON.parse(body);
-                d.symbol = stockNum
-                callback(error, d);
-            } else {
-                callback(null, null);
-            }
-        })
-
-    }
-}
-
-function getstockHistDayQuoteList(stockNum) {
-    return function (callback) {
-        getStockQuoteList(stockNum, 'period=day&frame=2+YEAR')(callback);
-    }
-}
-
-function saveStockDayHistQuoteMongo(stockDayQuoteList, db) {
-    return function (callback) {
-        var rowdata = stockDayQuoteList;
-//        MongoClient.connect(global.mongoURI, function(err, db) {
-        var lastupdate = new Date();
-        var stockDayQuoteCollection = db.collection('stockDayQuote');
-        var errmsg;
-//remove null object
-        var data = _.filter(stockDayQuoteList, function (stockDayQuote) {
-            return stockDayQuote != null;
-        });
-
-        co(function*() {
-            for (var i = 0, len = data.length; i < len; i++) {
-                var stocksymbol = data[i].symbol;
-                var stockDataset = data[i].dataset;
-                console.log('start handle dataset of symbol:' + data[i].symbol);
-
-                if (stockDataset != null && stockDataset.length > 0) {
-                    var bulk = stockDayQuoteCollection.initializeOrderedBulkOp({
-                        useLegacyOps: true
-                    });
-                    for (var j = 0; j < stockDataset.length; j++) {
-                        var stockdaydata = {};
-                        stockdaydata.symbol = stocksymbol;
-                        //TODO: fixed the date to be UTC
-                        var dateSetDate = new Date(stockDataset[j].Date);
-                        stockdaydata.date = new Date(dateSetDate.getFullYear(), dateSetDate.getMonth(), dateSetDate.getDate(), 0, 0, 0);
-                        stockdaydata.high = parseFloat(stockDataset[j].High);
-                        stockdaydata.low = parseFloat(stockDataset[j].Low);
-                        stockdaydata.open = parseFloat(stockDataset[j].Open);
-                        stockdaydata.close = parseFloat(stockDataset[j].Close);
-                        stockdaydata.turnover = parseFloat(stockDataset[j].Turnover);
-                        stockdaydata.volume = parseFloat(stockDataset[j].Volume);
-                        //batch.insert(data[i]);
-                        bulk.find({
-                            $and: [{symbol: stocksymbol}, {date: stockdaydata.date}]
-
-                        }).upsert().replaceOne(
-                            stockdaydata
-                        );
-                    }
-                    var dsbulk = bulk.execute();
-                    console.log(stocksymbol + ' bulk execute ds completed.');
-                }
-            }
-
-        }).then((val)=> {
-                callback(null, val);
-            }
-        ).catch(function (err, result) {
-                console.log('err: ' + err + ', result: ' + result);
-            });
-    }
-}
-
-function saveStockListMongo(stocks, db) {
-    return function (callback) {
-        var data = stocks;
-//        MongoClient.connect(global.mongoURI, function(err, db) {
-        var lastupdate = new Date();
-        var stockProfile2Collection = db.collection('stockProfile');
-        var bulk = stockProfile2Collection.initializeUnorderedBulkOp({
-            useLegacyOps: true
-        });
-        for (var i = 0, len = data.length; i < len; i++) {
-            if (data != null) {
-                data[i]["lastupdate"] = lastupdate;
-                //batch.insert(data[i]);
-                bulk.find({
-                    symbol: data[i].symbol,
-                }).upsert().replaceOne(
-                    data[i]
-                );
-            }
-
-        }
-        bulk.execute(function (err, result) {
-            console.log(result.nInserted);
-            callback(err, result);
-        });
-    }
-}
-
-function saveStockInfoMongo(stockInfos, db) {
-    return function (callback) {
-        var data = stockInfos;
-        //MongoClient.connect(global.mongoURI, function(err, db) {
-        //var lastupdate = new Date();
-
-        for (var i = 0, len = data.length; i < len; i++) {
-            var info = {};
-            var apiData = data[i];
-            if (apiData == null)
-                continue;
-            else {
-                console.log('saveStockInfoMongo symbol:' + apiData.symbol);
-                var stockProfile2Collection = db.collection('stockProfile');
-                var bulk = stockProfile2Collection.initializeUnorderedBulkOp({
-                    useLegacyOps: true
-                });
-                //sector transform
-                if ((apiData.sector)) {
-                    var sector_id = Object.keys(apiData.sector)[0];
-                    info.sector = {};
-                    for (var sectorkey in apiData.sector[sector_id]) {
-                        info.sector[sectorkey] = apiData.sector[sector_id][sectorkey];
-                    }
-                }
-
-                //sub industry transform
-                if ((apiData.sub_industry)) {
-                    var sub_industry_id = Object.keys(apiData.sub_industry)[0];
-                    info.sub_industry = {};
-                    for (var sub_industry_key in apiData.sub_industry[sub_industry_id]) {
-                        info.sub_industry[sub_industry_key] = apiData.sub_industry[sub_industry_id][sub_industry_key];
-                    }
-                }
-                // industry transform
-                if ((apiData.industry)) {
-                    var industry_id = Object.keys(apiData.industry)[0];
-                    info.industry = {};
-                    for (var industry_key in apiData.industry[industry_id]) {
-                        info.industry[industry_key] = apiData.industry[industry_id][industry_key];
-                    }
-                }
-
-                info.trading_currency = apiData.trading_currency;
-                info.board_amount = apiData.board_amount;
-                info.par_currency = apiData.par_currency;
-                info.stock_type = apiData.stock_type;
-                info.fin_year = apiData.fin_year;
-                info.listing_date = apiData.listing_date;
-                info.exchange = apiData.exchange;
-                info.board_lot = apiData.board_lot;
-                info.instrument_class = apiData.instrument_class;
-
-                //batch.insert(data[i]);
-                bulk.find({
-                    symbol: data[i].symbol
-
-                }).update({
-                    $set: {
-                        info: info
-                    },
-                    $currentDate: {
-                        lastupdate: true
-                    }
-                });
-
-                bulk.execute(function (err, result) {
-                    console.log(result.nInserted);
-                    callback(err, result);
-                });
-            }
-        }
-    }
-    //})
-}
-
-function getstockTodayQuoteList(symbol) {
-    return function (callback) {
-        request(util.format(stockTodayQuoteURL, parseInt(symbol)), function (error, response, body) {
-            if (!error && response.statusCode == 200) {
-                var d = JSON.parse(body);
-                d.symbol = symbol;
-                d.date = new Date(d.Date);
-                delete d.Date;
-                console.log('getstockTodayQuoteList:' + d.symbol);
-                callback(error, d);
-            } else {
-                callback(null, null);
-            }
-        });
-    }
-}
-
-function saveStockTodayQuote(stockTodayQuote, db) {
-    return function (callback) {
-        if (stockTodayQuote != null) {
-            var sdqCollection = db.collection('stockDayQuote');
-            var stockTodayData = {};
-            stockTodayData.symbol = stockTodayQuote.symbol;
-            stockTodayData.date = new Date(stockTodayQuote.date.getFullYear(), stockTodayQuote.date.getMonth(), stockTodayQuote.date.getDate(), 0, 0, 0);
-            //stockTodayData.date = new Date(stockTodayQuote.date);
-            stockTodayData.high = parseFloat(stockTodayQuote.High);
-            stockTodayData.low = parseFloat(stockTodayQuote.Low);
-            stockTodayData.open = parseFloat(stockTodayQuote.Open);
-            stockTodayData.close = parseFloat(stockTodayQuote.Close);
-            stockTodayData.turnover = parseFloat(stockTodayQuote.Turnover);
-            stockTodayData.volume = parseFloat(stockTodayQuote.Volume);
-            console.log("save Today Quote:" + stockTodayQuote.symbol);
-            sdqCollection.updateOne(
-                {$and: [{symbol: stockTodayData.symbol}, {date: stockTodayData.date}]}
-                , stockTodayData
-                , {upsert: true}
-                , function (err, result) {
-                    console.log("saved Today Quote:" + stockTodayQuote.symbol);
-                    callback(err, result.ok);
-                }
-            )
-        } else {
-            callback(null, null);
-        }
-    }
-
-}
 
 
-MongoClient.connect(global.mongoURI, function (err, db) {
-    var argv1 = process.argv[2];
-
+var argv1 = process.argv[2];
+//ensure mongoose has  connected to the database already
+mongoose.connection.on("open", function (err) {
     co(function*() {
 
-        var stocks = yield getStockList();
-        //stocks = stocks.slice(0, 10);
-        var saveStocks = yield saveStockListMongo(stocks, db);
+        //step 1: load live stock list
+        var stockSymbols = yield money18Api.getHKLiveStockList();
+        yield nodeStockSpiderDAO.saveStockListMongo(global.mongoose, stockSymbols)
 
-        //var getStockInfoMap = stocks.map(function (stock) {
-        //    return getStockInfo(stock.symbol);
-        //});
-        //var stockInfos = yield parallel(getStockInfoMap, 20);
-        //var saveStockInfos = yield saveStockInfoMongo(stockInfos, db)
-
+        //step 2: load stock historical quotes
         if (argv1 == null) {
-            var getStockDayHistQuoteMap = stocks.map(function (stock) {
-                return getstockHistDayQuoteList(stock.symbol)
-
+            var getStockDayHistQuoteMap = stockSymbols.map(function (stock) {
+                return hkejApi.getstockHistDayQuoteList(stock.symbol)
             })
             var stockDayHistQuote = yield parallel(getStockDayHistQuoteMap, 20);
-            var saveStockDayHistQuotes = yield saveStockDayHistQuoteMongo(stockDayHistQuote, db);
+            var saveStockDayHistQuotes = yield nodeStockSpiderDAO.saveStockDayHistQuoteMongo(global.mongoose, stockDayHistQuote);
+
+            getStockDayHistQuoteMap = null;
+            stockDayHistQuote = null;
+            saveStockDayHistQuotes = null;
         }
-        var getstockTodayQuoteListMap = stocks.map(function (stock) {
-            return getstockTodayQuoteList(stock.symbol);
+        //step 3: load stock today quotes
+        var getstockTodayQuoteListMap = stockSymbols.map(function (stock) {
+            return hkejApi.getstockTodayQuoteList(stock.symbol);
         });
 
         var stockTodayQuotes = yield parallel(getstockTodayQuoteListMap, 20);
 
         var saveStockTodayQuoteMap = stockTodayQuotes.map(
             function (stockTodayQuote) {
-                return saveStockTodayQuote(stockTodayQuote, db)
+                return nodeStockSpiderDAO.saveStockTodayQuote(mongoose, stockTodayQuote)
             }
         )
 
-        var saveStockTodayQuotes = yield (saveStockTodayQuoteMap);
-        console.log("Transforming StockDayQuote into array.");
-        var transformStockDayQuote = yield stockDAO.transformStockDayQuote(StockDayQuoteModel);
+
+        var saveStockTodayQuotes = yield parallel(saveStockTodayQuoteMap, 5);
+        saveStockTodayQuoteMap = null;
+        saveStockTodayQuotes = null;
+
+        console.log("Transforming quota array table")
+        var transformStockDayQuote = yield stockDAO.transformStockDayQuote(mongoose.model('StockDayQuote'));
 
         return transformStockDayQuote;
 
@@ -376,7 +79,5 @@ MongoClient.connect(global.mongoURI, function (err, db) {
             console.log('err: ' + err + ', result: ' + result);
             process.exit(0);
 
-        })
-
-
-})
+        });
+});

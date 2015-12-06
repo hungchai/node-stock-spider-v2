@@ -5,15 +5,8 @@ module.exports = function () {
     var stockProfileSchema = new Schema({
         "_id" : Schema.Types.ObjectId,
         "symbol" : String,
-        "sc" : String,
-        "en" : String,
-        "lastupdate" : Date
-    });
-    var stockProfileInfoSchema = new Schema({
-        "_id" : Schema.Types.ObjectId,
-        "symbol" : String,
-        "sc" : String,
-        "en" : String,
+        "chiName": String,
+        "engName": String,
         "lastupdate" : Date
     });
     mongoose.model('StockProfile', stockProfileSchema, 'stockProfile');

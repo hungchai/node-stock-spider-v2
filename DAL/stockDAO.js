@@ -57,6 +57,7 @@ var getStockDayQuote = function (symbol, StockDayQuoteModel) {
 
 var transformStockDayQuote = function (StockDayQuoteModel) {
     return function (callback) {
+
         var aggreg = StockDayQuoteModel.aggregate(
             [
 

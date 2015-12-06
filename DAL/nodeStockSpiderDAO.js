@@ -1,13 +1,16 @@
 var co = require('co');
 var _ = require("underscore");
-
+var moment = require("moment-timezone");
 module.exports =
 {
 
     saveStockListMongo: function (mongoose, stockProfiles) {
         return function (callback) {
-
             var StockProfileMongo = mongoose.model('StockProfile');
+            //var db = mongoose.connection;
+            //var bulk = db.collection('StockProfile').initializeUnorderedBulkOp({
+            //    useLegacyOps: true
+            //});
             var bulk = StockProfileMongo.collection.initializeUnorderedBulkOp({
                 useLegacyOps: true
             });
@@ -77,7 +80,9 @@ module.exports =
                             //TODO: fixed the date to be UTC
                             var dateSetDate = new Date(stockDataset[j].Date);
 
-                            stockdaydata.date = new Date(dateSetDate.getFullYear(), dateSetDate.getMonth(), dateSetDate.getDate(), 0, 0, 0);
+                            //stockdaydata.date = new Date(dateSetDate.getFullYear(), dateSetDate.getMonth(), dateSetDate.getDate(), 0, 0, 0);
+                            var hksymdate = new Date(dateSetDate.getFullYear(), dateSetDate.getMonth(), dateSetDate.getDate(), 0, 0, 0);
+                            stockdaydata.date = moment.tz(hksymdate, "Asia/Hong_Kong").toDate();
                             stockdaydata.high = parseFloat(stockDataset[j].High);
                             stockdaydata.low = parseFloat(stockDataset[j].Low);
                             stockdaydata.open = parseFloat(stockDataset[j].Open);
@@ -91,15 +96,20 @@ module.exports =
                             }).upsert().updateOne(
                                 stockdaydata
                             );
+                            hksymdate = null;
                         }
-                        console.log(stocksymbol + 'add bulk completed.');
+                        console.log(stocksymbol + ' add bulk completed.');
+                    }
+                    if (i % 2000 == 0 || i === len - 1) {
+                        console.log('bulkexecuting ....');
+                        var bulkresult = yield bulkexecute();
+                        console.log('bulkexecute completed.');
                     }
                 }
 
             }).then((val)=> {
                     co(function*() {
-                        var bulkresult = yield bulkexecute();
-                        console.log('bulkexecute completed.');
+
                         callback(null, val);
                     });
                 }
@@ -115,7 +125,8 @@ module.exports =
                 var stockDayQuoteModel = mongoose.model('StockDayQuote');
                 var stockTodayData = {};
                 stockTodayData.symbol = stockTodayQuote.symbol;
-                stockTodayData.date = new Date(stockTodayQuote.date.getFullYear(), stockTodayQuote.date.getMonth(), stockTodayQuote.date.getDate(), 0, 0, 0);
+                var hksymdate = new Date(stockTodayQuote.date.getFullYear(), stockTodayQuote.date.getMonth(), stockTodayQuote.date.getDate(), 0, 0, 0);
+                stockTodayData.date = moment.tz(hksymdate, "Asia/Hong_Kong").toDate();
                 //stockTodayData.date = new Date(stockTodayQuote.date);
                 stockTodayData.high = parseFloat(stockTodayQuote.High);
                 stockTodayData.low = parseFloat(stockTodayQuote.Low);
@@ -136,6 +147,7 @@ module.exports =
                         callback(err, result.ok);
                     }
                 )
+                hksymdate = null;
             } else {
                 callback(null, null);
             }
