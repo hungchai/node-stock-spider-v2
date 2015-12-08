@@ -51,8 +51,7 @@ class HkejApi {
                 if (!error && response.statusCode == 200) {
                     var d = JSON.parse(body);
                     d.symbol = stockSymbol;
-                    var quotedate = moment.tz(d.Date, "Asia/Hong_Kong");
-                    d.date = quotedate.toDate();
+                    d.date = d.Date
                     delete d.Date;
                     console.log('getstockTodayQuoteList:' + d.symbol);
                     callback(error, d);

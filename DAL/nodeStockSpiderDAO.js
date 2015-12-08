@@ -78,10 +78,10 @@ module.exports =
                             var stockdaydata = {};
                             stockdaydata.symbol = stocksymbol;
                             //TODO: fixed the date to be UTC
-                            var dateSetDate = new Date(stockDataset[j].Date);
+                            //var dateSetDate = new Date(stockDataset[j].Date);
 
                             //stockdaydata.date = new Date(dateSetDate.getFullYear(), dateSetDate.getMonth(), dateSetDate.getDate(), 0, 0, 0);
-                            stockdaydata.date = moment.tz([dateSetDate.getFullYear(), dateSetDate.getMonth(), dateSetDate.getDate()], "Asia/Hong_Kong").toDate();
+                            stockdaydata.date = moment.tz(stockDataset[j].Date, "Asia/Hong_Kong").toDate();
                             stockdaydata.high = parseFloat(stockDataset[j].High);
                             stockdaydata.low = parseFloat(stockDataset[j].Low);
                             stockdaydata.open = parseFloat(stockDataset[j].Open);
@@ -124,7 +124,7 @@ module.exports =
                 var stockDayQuoteModel = mongoose.model('StockDayQuote');
                 var stockTodayData = {};
                 stockTodayData.symbol = stockTodayQuote.symbol;
-                stockTodayData.date = moment.tz([stockTodayQuote.date.getFullYear(),stockTodayQuote.date.getMonth(), stockTodayQuote.date.getDate()], "Asia/Hong_Kong").toDate();
+                stockTodayData.date = moment.tz(stockTodayQuote.date, "Asia/Hong_Kong").toDate();
                 //stockTodayData.date = new Date(stockTodayQuote.date);
                 stockTodayData.high = parseFloat(stockTodayQuote.High);
                 stockTodayData.low = parseFloat(stockTodayQuote.Low);
