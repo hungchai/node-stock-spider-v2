@@ -1,4 +1,4 @@
-global.config = require('./config/config.json');
+global.config = require('../config/config.json');
 global.mongoose = require('mongoose');
 global.MongoClient = require('mongodb').MongoClient;
 global.co = require('co');

@@ -124,7 +124,8 @@ module.exports =
                 var stockDayQuoteModel = mongoose.model('StockDayQuote');
                 var stockTodayData = {};
                 stockTodayData.symbol = stockTodayQuote.symbol;
-                stockTodayData.date = moment.tz(stockTodayQuote.date, "Asia/Hong_Kong").toDate();
+                //cut timestamp
+                stockTodayData.date = moment.tz(stockTodayQuote.date.substr(0, 10), "Asia/Hong_Kong").toDate();
                 //stockTodayData.date = new Date(stockTodayQuote.date);
                 stockTodayData.high = parseFloat(stockTodayQuote.High);
                 stockTodayData.low = parseFloat(stockTodayQuote.Low);
