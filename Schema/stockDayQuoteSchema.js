@@ -12,5 +12,7 @@ module.exports = function () {
         'turnover': Number
 
     });
+    
+    stockDayQuoteSchema.index({ symbol: 1, date: -1}); // schema level, ensure index
     mongoose.model('StockDayQuote', stockDayQuoteSchema, 'stockDayQuote');
 };
