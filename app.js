@@ -26,8 +26,8 @@ catch (err) {
 global.mongoose.connect(global.mongoURI);
 
 var mongoSchema = require('./Schema')
-    ,stockProfileSchema=mongoSchema.stockProfileSchema
-    ,stockDayQuoteSchema=mongoSchema.stockDayQuoteSchema;
+   // ,stockProfileSchema=mongoSchema.stockProfileSchema
+   // ,stockDayQuoteSchema=mongoSchema.stockDayQuoteSchema;
 
 // require('./Schema/stockProfileSchema.js')();
 // require('./Schema/stockDayQuoteSchema.js')();
@@ -40,7 +40,7 @@ mongoose.connection.on("open", function (err) {
 
         //step 1: load live stock list
         var stockSymbols = yield money18Api.getHKLiveStockList();
-        stockSymbols = stockSymbols.slice(1,100);
+        //stockSymbols = stockSymbols.slice(1,100);
         yield nodeStockSpiderDAO.saveStockListMongo(global.mongoose, stockSymbols)
         
 
@@ -51,7 +51,7 @@ mongoose.connection.on("open", function (err) {
                 return hkejApi.getstockHistDayQuoteList(stock.symbol)
             })
             var stockDayHistQuote = yield parallel(getStockDayHistQuoteMap, 20);
-            var saveStockDayHistQuotes = yield nodeStockSpiderDAO.saveStockDayHistQuoteMongo(global.mongoose, stockDayHistQuote);
+            var saveStockDayHistQuotes = yield nodeStockSpiderDAO.saveStockDayHistQuoteMongo(mongoose, stockDayHistQuote);
 
             getStockDayHistQuoteMap = null;
             stockDayHistQuote = null;
