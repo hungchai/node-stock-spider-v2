@@ -37,13 +37,10 @@ var argv1 = process.argv[2];
 //ensure mongoose has  connected to the database already
 mongoose.connection.on("open", function (err) {
     co(function*() {
-
         //step 1: load live stock list
         var stockSymbols = yield money18Api.getHKLiveStockList();
         //stockSymbols = stockSymbols.slice(1,100);
         yield nodeStockSpiderDAO.saveStockListMongo(global.mongoose, stockSymbols)
-        
-
         
         //step 2: load stock historical quotes
         if (argv1 == null) {
