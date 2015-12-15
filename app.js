@@ -8,13 +8,9 @@ global.util = require('util');
 global.request = require('request');
 global.ent = require('ent');
 global._ = require("underscore");
-global.marketAPI = require('./marketAPI')
-    ,money18Api =marketAPI.money18Api
-    ,hkejApi = marketAPI.hkejApi;
+global.marketAPI = require('./marketAPI'), money18Api = marketAPI.money18Api, hkejApi = marketAPI.hkejApi;
 
-global.DAL = require('./DAL')
-    ,stockDAO = DAL.stockDAO
-    ,nodeStockSpiderDAO = DAL.nodeStockSpiderDAO;
+global.DAL = require('./DAL'), stockDAO = DAL.stockDAO, nodeStockSpiderDAO = DAL.nodeStockSpiderDAO;
 
 try {
     global.mongoURI = global.config.mongoDbConn;
@@ -26,8 +22,8 @@ catch (err) {
 global.mongoose.connect(global.mongoURI);
 
 var mongoSchema = require('./Schema')
-   // ,stockProfileSchema=mongoSchema.stockProfileSchema
-   // ,stockDayQuoteSchema=mongoSchema.stockDayQuoteSchema;
+    // ,stockProfileSchema=mongoSchema.stockProfileSchema
+    // ,stockDayQuoteSchema=mongoSchema.stockDayQuoteSchema;
 
 // require('./Schema/stockProfileSchema.js')();
 // require('./Schema/stockDayQuoteSchema.js')();
@@ -35,54 +31,58 @@ var mongoSchema = require('./Schema')
 
 var argv1 = process.argv[2];
 //ensure mongoose has  connected to the database already
-mongoose.connection.on("open", function (err) {
+mongoose.connection.on("open", function(err) {
     co(function*() {
-        //step 1: load live stock list
-        var stockSymbols = yield money18Api.getHKLiveStockList();
-        //stockSymbols = stockSymbols.slice(1,100);
-        yield nodeStockSpiderDAO.saveStockListMongo(global.mongoose, stockSymbols)
-        
-        //step 2: load stock historical quotes
-        if (argv1 == null) {
-            var getStockDayHistQuoteMap = stockSymbols.map(function (stock) {
-                return hkejApi.getstockHistDayQuoteList(stock.symbol)
-            })
-            var stockDayHistQuote = yield parallel(getStockDayHistQuoteMap, 20);
-            var saveStockDayHistQuotes = yield nodeStockSpiderDAO.saveStockDayHistQuoteMongo(mongoose, stockDayHistQuote);
+            //step 1: load live stock list
+            var tmpstockSymbols = yield money18Api.getHKLiveStockList();
+            var chunk = 300; //fit 512MB ram
+            for (i=0,j=tmpstockSymbols.length; i<j; i+=chunk) {
+                var stockSymbols = tmpstockSymbols.slice(i,i+chunk);
+                //stockSymbols = stockSymbols.slice(1,100);
+                yield nodeStockSpiderDAO.saveStockListMongo(global.mongoose, stockSymbols)
 
-            getStockDayHistQuoteMap = null;
-            stockDayHistQuote = null;
-            saveStockDayHistQuotes = null;
-        }
-        //step 3: load stock today quotes
-        var getstockTodayQuoteListMap = stockSymbols.map(function (stock) {
-            return hkejApi.getstockTodayQuoteList(stock.symbol);
-        });
+                //step 2: load stock historical quotes
+                if (argv1 == null) {
+                    var getStockDayHistQuoteMap = stockSymbols.map(function(stock) {
+                        return hkejApi.getstockHistDayQuoteList(stock.symbol)
+                    })
+                    var stockDayHistQuote = yield parallel(getStockDayHistQuoteMap, 20);
+                    var saveStockDayHistQuotes = yield nodeStockSpiderDAO.saveStockDayHistQuoteMongo(mongoose, stockDayHistQuote);
 
-        var stockTodayQuotes = yield parallel(getstockTodayQuoteListMap, 20);
+                    getStockDayHistQuoteMap = null;
+                    stockDayHistQuote = null;
+                    saveStockDayHistQuotes = null;
+                }
+                //step 3: load stock today quotes
+                var getstockTodayQuoteListMap = stockSymbols.map(function(stock) {
+                    return hkejApi.getstockTodayQuoteList(stock.symbol);
+                });
 
-        var saveStockTodayQuoteMap = stockTodayQuotes.map(
-            function (stockTodayQuote) {
-                return nodeStockSpiderDAO.saveStockTodayQuote(mongoose, stockTodayQuote)
+                var stockTodayQuotes = yield parallel(getstockTodayQuoteListMap, 20);
+
+                var saveStockTodayQuoteMap = stockTodayQuotes.map(
+                    function(stockTodayQuote) {
+                        return nodeStockSpiderDAO.saveStockTodayQuote(mongoose, stockTodayQuote)
+                    }
+                )
+
+
+                var saveStockTodayQuotes = yield parallel(saveStockTodayQuoteMap, 5);
+                saveStockTodayQuoteMap = null;
+                saveStockTodayQuotes = null;
+                
+                stockSymbols = null;
             }
-        )
+            console.log("Transforming quota array table")
+            var transformStockDayQuote = yield stockDAO.transformStockDayQuote(mongoose.model('StockDayQuote'));
 
+            return transformStockDayQuote;
 
-        var saveStockTodayQuotes = yield parallel(saveStockTodayQuoteMap, 5);
-        saveStockTodayQuoteMap = null;
-        saveStockTodayQuotes = null;
+        }).then(function(val) {
+            process.exit(1);
 
-        console.log("Transforming quota array table")
-        var transformStockDayQuote = yield stockDAO.transformStockDayQuote(mongoose.model('StockDayQuote'));
-
-        return transformStockDayQuote;
-
-    }).then
-    (function (val) {
-        process.exit(1);
-
-    })
-        .catch(function (err, result) {
+        })
+        .catch(function(err, result) {
             console.log('err: ' + err + ', result: ' + result);
             process.exit(0);
 
