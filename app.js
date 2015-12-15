@@ -8,10 +8,13 @@ global.util = require('util');
 global.request = require('request');
 global.ent = require('ent');
 global._ = require("underscore");
-global.stockDAO = require('./DAL/stockDAO.js');
-global.money18Api = require('./marketAPI/money18Api.js');
-global.hkejApi = require('./marketAPI/hkejApi.js');
-var nodeStockSpiderDAO = require('./DAL/nodeStockSpiderDAO.js')
+global.marketAPI = require('./marketAPI')
+    ,money18Api =marketAPI.money18Api
+    ,hkejApi = marketAPI.hkejApi;
+
+global.DAL = require('./DAL')
+    ,stockDAO = DAL.stockDAO
+    ,nodeStockSpiderDAO = DAL.nodeStockSpiderDAO;
 
 try {
     global.mongoURI = global.config.mongoDbConn;
@@ -22,8 +25,12 @@ catch (err) {
 
 global.mongoose.connect(global.mongoURI);
 
-require('./Schema/stockProfileSchema.js')();
-require('./Schema/stockDayQuoteSchema.js')();
+var mongoSchema = require('./Schema')
+    ,stockProfileSchema=mongoSchema.stockProfileSchema
+    ,stockDayQuoteSchema=mongoSchema.stockDayQuoteSchema;
+
+// require('./Schema/stockProfileSchema.js')();
+// require('./Schema/stockDayQuoteSchema.js')();
 
 
 var argv1 = process.argv[2];
@@ -33,8 +40,11 @@ mongoose.connection.on("open", function (err) {
 
         //step 1: load live stock list
         var stockSymbols = yield money18Api.getHKLiveStockList();
+        stockSymbols = stockSymbols.slice(1,100);
         yield nodeStockSpiderDAO.saveStockListMongo(global.mongoose, stockSymbols)
+        
 
+        
         //step 2: load stock historical quotes
         if (argv1 == null) {
             var getStockDayHistQuoteMap = stockSymbols.map(function (stock) {
