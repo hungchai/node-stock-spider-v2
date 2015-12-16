@@ -30,12 +30,16 @@ var mongoSchema = require('./Schema')
 
 
 var argv1 = process.argv[2];
+var chunk = process.argv[3];
+if (chunk == null)
+{
+    chunk = 300; //fit 512MB ram
+}
 //ensure mongoose has  connected to the database already
 mongoose.connection.on("open", function(err) {
     co(function*() {
             //step 1: load live stock list
             var tmpstockSymbols = yield money18Api.getHKLiveStockList();
-            var chunk = 300; //fit 512MB ram
             for (i=0,j=tmpstockSymbols.length; i<j; i+=chunk) {
                 var stockSymbols = tmpstockSymbols.slice(i,i+chunk);
                 //stockSymbols = stockSymbols.slice(1,100);
