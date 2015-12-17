@@ -89,7 +89,7 @@ var transformStockDayQuote = function (StockDayQuoteModel) {
                         "volumes": {
                             "$push": {$ifNull: ["$volume", 0]}
                         },
-                        "turnover": {
+                        "turnovers": {
                             "$push": {$ifNull: ["$turnover", 0]}
                         },
                         "dates": {
