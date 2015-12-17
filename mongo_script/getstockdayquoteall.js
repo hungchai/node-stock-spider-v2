@@ -28,7 +28,7 @@ db.stockDayQuote.aggregate(
                 "volumes": {
                     "$push": {$ifNull: ["$volume", 0]}
                 },
-                "turnover": {
+                "turnovers": {
                     "$push": {$ifNull: ["$turnover", 0]}
                 }
             }
@@ -36,7 +36,7 @@ db.stockDayQuote.aggregate(
 
         // Stage 3
         {
-            $out: "symbolQuote"
+            $out: "stockQuotesArray"
         }
     ],
 
