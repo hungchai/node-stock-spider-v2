@@ -1,6 +1,7 @@
 'use strict';
 var cheerio = require('cheerio');
 var ent = require('ent');
+var request = require('request');
 
 class StockSymbol {
     constructor(isymbol, iengName, ichiName, ilastupdate) {
@@ -24,6 +25,11 @@ class StockSymbol {
                     }
                 };
                 eval(ent.decode(body));
+                //add hsi,HSCE
+                stockSymbols.push(new StockSymbol("HSI","恒生指數","Hang Seng Index"));
+                stockSymbols.push(new StockSymbol("HSCE","國企指數","Hang Seng China enterprises Index"));
+
+                
                 callback(error, stockSymbols);
             });
 

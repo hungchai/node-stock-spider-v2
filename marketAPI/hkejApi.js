@@ -1,5 +1,7 @@
 'use strict';
 var moment = require('moment-timezone');
+var util = require('util');
+var request = require('request');
 
 var stockMinutesQuoteURL = 'http://hkej.m-finance.com/charting/tomcat/mfchart?code=%s&period=1min&frame=72+HOUR';
 var stockHistDayQuoteURL = 'http://hkej.m-finance.com/charting/tomcat/mfchart';
@@ -12,13 +14,13 @@ class HkejApi {
     static getStockQuoteList(stockSymbol, parameter, callback) {
         return function (callback) {
             console.log("getStockQuoteList: " + stockSymbol);
-            var formBody = util.format('code=%s&%s', parseInt(stockSymbol), parameter);
+            var formBody = util.format('code=%s&%s', stockSymbol.substr(0, 5), parameter);
             var contentLength = formBody.length;
             request({
                 headers: {
                     'Content-Length': contentLength,
                     'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-                    'Referer': util.format('http://stock360.hkej.com/quotePlus/%s', parseInt(stockSymbol))
+                    'Referer': util.format('http://stock360.hkej.com/quotePlus/%s',  stockSymbol.substr(0, 5))
                 },
                 uri: stockHistDayQuoteURL,
                 body: formBody,
@@ -47,7 +49,7 @@ class HkejApi {
 
     static getstockTodayQuoteList(stockSymbol) {
         return function (callback) {
-            request(util.format(stockTodayQuoteURL, parseInt(stockSymbol)), function (error, response, body) {
+            request(util.format(stockTodayQuoteURL,  stockSymbol.substr(0, 5)), function (error, response, body) {
                 if (!error && response.statusCode == 200) {
                     var d = JSON.parse(body);
                     d.symbol = stockSymbol;
