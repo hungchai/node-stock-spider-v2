@@ -1,5 +1,5 @@
 {
-  "name": "stock_market_api",
+  "name": "stock-market-api",
   "version": "1.0.0",
   "description": "crab the stock quote by api or web site",
   "main": "index.js",
