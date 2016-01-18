@@ -43,7 +43,7 @@ global.mongoose.connection.on("open", function(err) {
     co(function*() {
             //step 1: load live stock list
             var tmpstockSymbols = yield money18Api.getHKLiveStockList();
-            tmpstockSymbols = tmpstockSymbols.slice(1,3);
+            //tmpstockSymbols = tmpstockSymbols.slice(1,3);
             for (i=0,j=tmpstockSymbols.length; i<j; i+=chunk) {
                 var stockSymbols = tmpstockSymbols.slice(i,i+chunk);
                 //stockSymbols = stockSymbols.slice(1,100);
