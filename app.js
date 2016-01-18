@@ -36,10 +36,14 @@ if (chunk == null)
     chunk = 300; //fit 512MB ram
 }
 //ensure mongoose has  connected to the database already
-mongoose.connection.on("open", function(err) {
+
+var programLog = global.mongoose.model('ProgramLog');
+var nodeStockSpiderLog = new programLog({appName: 'nodeStockSpider', beginDateTime: new Date()});
+global.mongoose.connection.on("open", function(err) {
     co(function*() {
             //step 1: load live stock list
             var tmpstockSymbols = yield money18Api.getHKLiveStockList();
+            tmpstockSymbols = tmpstockSymbols.slice(1,3);
             for (i=0,j=tmpstockSymbols.length; i<j; i+=chunk) {
                 var stockSymbols = tmpstockSymbols.slice(i,i+chunk);
                 //stockSymbols = stockSymbols.slice(1,100);
@@ -83,12 +87,22 @@ mongoose.connection.on("open", function(err) {
             return transformStockDayQuote;
 
         }).then(function(val) {
-            process.exit(1);
+            nodeStockSpiderLog.endDateTime = new Date();
+            nodeStockSpiderLog.status ="C";
+            nodeStockSpiderLog.save(function(err){
+                 process.exit(1);
+            });
+           
 
         })
         .catch(function(err, result) {
+            nodeStockSpiderLog.endDateTime = new Date();
+            nodeStockSpiderLog.status ="E";
+            nodeStockSpiderLog.remark(err);
             console.log('err: ' + err + ', result: ' + result);
-            process.exit(0);
+            nodeStockSpiderLog.save(function(err){
+                 process.exit(0);
+            })
 
         });
 });
