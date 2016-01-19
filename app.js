@@ -89,6 +89,7 @@ global.mongoose.connection.on("open", function(err) {
         }).then(function(val) {
             nodeStockSpiderLog.endDateTime = new Date();
             nodeStockSpiderLog.status ="C";
+             nodeStockSpiderLog.remark = "";
             nodeStockSpiderLog.save(function(err){
                  process.exit(1);
             });
@@ -98,7 +99,7 @@ global.mongoose.connection.on("open", function(err) {
         .catch(function(err, result) {
             nodeStockSpiderLog.endDateTime = new Date();
             nodeStockSpiderLog.status ="E";
-            nodeStockSpiderLog.remark(err);
+            nodeStockSpiderLog.remark = err.message;
             console.log('err: ' + err + ', result: ' + result);
             nodeStockSpiderLog.save(function(err){
                  process.exit(0);
