@@ -8,6 +8,7 @@ global.util = require('util');
 global.request = require('request');
 global.ent = require('ent');
 global._ = require("underscore");
+global.os = require("os");
 global.marketAPI = require('./marketAPI'), money18Api = marketAPI.money18Api, hkejApi = marketAPI.hkejApi;
 
 global.DAL = require('./DAL'), stockDAO = DAL.stockDAO, nodeStockSpiderDAO = DAL.nodeStockSpiderDAO;
@@ -21,7 +22,9 @@ catch (err) {
 
 global.mongoose.connect(global.mongoURI);
 
-var mongoSchema = require('./Schema')
+var mongoSchema = require('./Schema');
+var ipAddress = os.networkInterfaces();
+
     // ,stockProfileSchema=mongoSchema.stockProfileSchema
     // ,stockDayQuoteSchema=mongoSchema.stockDayQuoteSchema;
 
@@ -39,6 +42,8 @@ if (chunk == null)
 
 var programLog = global.mongoose.model('ProgramLog');
 var nodeStockSpiderLog = new programLog({appName: 'nodeStockSpider', beginDateTime: new Date()});
+nodeStockSpiderLog.ipAddress = ipAddress["eth0"][0]["address"];
+
 global.mongoose.connection.on("open", function(err) {
     co(function*() {
             //step 1: load live stock list
@@ -50,7 +55,7 @@ global.mongoose.connection.on("open", function(err) {
                 yield nodeStockSpiderDAO.saveStockListMongo(global.mongoose, stockSymbols)
 
                 //step 2: load stock historical quotes
-                if (argv1 == null) {
+                if (argv1 == 'full') {
                     var getStockDayHistQuoteMap = stockSymbols.map(function(stock) {
                         return hkejApi.getstockHistDayQuoteList(stock.symbol)
                     })
