@@ -5,7 +5,7 @@ module.exports = function () {
     var programLogSchema = new Schema({
         '_id' :  {type: Schema.Types.ObjectId, default: function () { return new mongoose.Types.ObjectId} },
         'appName': String,
-        'ip': String,
+        'ipAddress': String,
         'enterDate': Date,
         'status': String,
         'remark': String,
