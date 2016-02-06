@@ -6,7 +6,7 @@ module.exports = function () {
         '_id' :  {type: Schema.Types.ObjectId, default: function () { return new mongoose.Types.ObjectId} },
         'appName': String,
         'ipAddress': String,
-        'enterDate': Date,
+        'enterDate': {type:Date, default: Date.now()},
         'status': String,
         'remark': String,
         'beginDateTime': Date,
