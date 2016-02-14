@@ -8,7 +8,7 @@ var stockHistDayQuoteURL = 'http://hkej.m-finance.com/charting/tomcat/mfchart';
 var stockTodayQuoteURL = 'http://hkej.m-finance.com/charting/tomcat/todaydata?code=%s';
 
 class HkejApi {
-    construct() {
+    constructor() {
     }
 
     static getStockQuoteList(stockSymbol, parameter, callback) {
